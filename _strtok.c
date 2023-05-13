@@ -1,14 +1,21 @@
 #include <string.h>
+#include <unistd.h>
+#include <stdlib.h>
 #include <stdio.h>
 
 char *_strtok(char *str, const char *delim)
 {
-	char *token = NULL;
+	static char *position = NULL;
 	int i = 0, j = 0, len = 0, check = 0, temp = 0;
 
-	token = str;
+	if (str != NULL)
+		position = str;
+	else
+		str = position;
 	len = strlen(delim);
 
+	if (str == NULL)
+		return (NULL);
 	while (str[i])
 	{
 		j = 0;
@@ -27,8 +34,34 @@ char *_strtok(char *str, const char *delim)
 		{
 			temp++;
 			if (temp > check)
-				return (str += i);
+			{
+				position = &str[i - 1];
+				return (str);
+			}
 		}
 	}
+	if (!str[i])
+	{
+		position = NULL;
+		return(str);
+	}
 	return (NULL);
+}
+
+int main(int ac, char **av)
+{
+	char *tok = NULL;
+
+	if (ac != 3)
+	{
+		dprintf(STDERR_FILENO, "Usage: strtok string delim\n");
+		exit(98);
+	}
+	tok = _strtok(av[1], av[2]);
+
+	while (tok)
+	{
+		printf("%s\n", tok);
+		tok = _strtok(NULL, av[2]);
+	}
 }
