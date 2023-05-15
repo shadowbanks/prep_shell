@@ -12,11 +12,11 @@ int main(int ac, char **av, char **env)
 	ssize_t gline;
 	pid_t cpid;
 
-	while (i++ < 5)
+	while (gline != EOF)
 	{
 		write(1, pmt, 2);
 		gline = getline(&lineptr, &n, stdin);
-		if (gline == EOF)
+		if (gline == -1)
 			break;
 		cpid = fork();
 		if (cpid == -1)
@@ -30,12 +30,20 @@ int main(int ac, char **av, char **env)
 			printf("current pid: %d\n", getpid());
 			//printf("%s\n", *argv);
 			if (execve(argv[0], argv, env) == -1)
-				perror("Error");
+			{
+				perror("Error
+						return (0);");
+				exit(1);
+			}
 		}
 		else
+		{
 			wait(&status);
+			printf("I should be: %d pid\n", getpid());
+			printf("i = %d\n", i++);
+		}
 
-		sleep(3);
+		//sleep(3);
 	}
 	free(lineptr);
 	return (0);
