@@ -51,26 +51,21 @@ int main(int ac, char **av, char **env)
 
 		printf("Just before check [%d]\n", getpid());
 
+		if (strcmp(argv[0], "exit") == 0)
+		{
+			if (argv[1])
+				return (atoi(argv[1]));
+			return (0);
+		}
+
 		path = strdup(original_path); //create a copy of the original path
 		if (command = searchfile(argv, path))
 		{
-			printf("FOUND");
+			printf("FOUND: %s\n", command);
 			cpid = fork(); /*start a child process*/
 		}
 		else
 			continue;
-		/*
-		if (stat(argv[0], &st) == 0)
-		{
-			printf("Found\n");
-			cpid = fork(); *start a child process*
-		}
-		else
-		{
-			printf("NOT FOUND\n");
-			continue;
-		}
-		*/
 
 		if (cpid == -1)
 			perror("CPID Error:");
@@ -90,7 +85,7 @@ int main(int ac, char **av, char **env)
 		else
 		{
 			wait(&status);/*wait for child process to end*/
-			printf("Wait status: %d\n", status);
+			printf("Wait status: %d\n", status>>8);
 		}
 	}
 	free(lineptr);
@@ -114,12 +109,22 @@ char *searchfile(char **av, char *path)
 		i = 0;
 		//printf("Just before the loop av[%d]: %s\n", i, av[i]);
 		printf("av[%d]: %s\n", i, av[i]);
-		buff = malloc(strlen(path_dir) + strlen(av[i]) + 2);
-		if (buff == NULL)
-			return (NULL);
-		strcpy(buff, path_dir);
-		strcat(buff, "/");
-		strcat(buff, av[i]);
+		if (av[i][0] != '/' && av[i][0] != '.')
+		{
+			buff = malloc(strlen(path_dir) + strlen(av[i]) + 2);
+			if (buff == NULL)
+				return (NULL);
+			strcpy(buff, path_dir);
+			strcat(buff, "/");
+			strcat(buff, av[i]);
+		}
+		else
+		{
+			buff = malloc(strlen(av[i]));
+			if (buff == NULL)
+				return (NULL);
+			strcpy(buff, av[i]);
+		}
 
 		printf("buff before search: %s\n", buff);
 		if (stat(buff, &stbuf) == 0)

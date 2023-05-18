@@ -9,6 +9,7 @@
 #include <sys/types.h>
 #include <sys/stat.h>
 
+extern char **environ;
 
 char *searchfile(char **argv, char *path);
 

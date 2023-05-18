@@ -1,69 +1,48 @@
 #include "main.h"
 
-extern char **environ;
 
 char *_strtok(char *str, const char *delim);
 
 char *_getenv(const char *name)
 {
-	char *token;
+	int i = 0, j = 0, k = 0;
+	char *token, **my_env = NULL, **env = environ, *temp = NULL;
 
+	while (environ[i] != NULL)
+	{
+		printf("%d", i++);
+	//	printf("%s\n", environ[i++]);
+	}
+	printf("\n");
 	//token = _strtok(env, ":");
 
-	printf("%s\n", token);
-}
 
-char *_strtok(char *str, const char *delim)
-{
-	static char *position = NULL;
-	int i = 0, j = 0, len = 0, check = 0, temp = 0;
+	my_env = malloc(sizeof(char *) * (i + 1));
 
-	if (str != NULL)
-		position = str;
-	else
-		str = position;
-	len = strlen(delim);
-
-	if (str == NULL)
-		return (NULL);
-	while (str[i])
+	while(env[j])
 	{
-		j = 0;
-		while (j < len)
-		{
-			if (str[i] == delim[j])
-			{
-				str[i] = '\0';
-				check++;
-				break;
-			}
-			j++;
-		}
-		i++;
-		if (check > 0)
-		{
-			temp++;
-			if (temp > check)
-			{
-				position = &str[i - 1];
-				return (str);
-			}
-		}
+		my_env[j] = malloc(strlen(env[j] + 1)); 
+		strcpy(my_env[j], env[j]);
+		//printf("env: %s\n\n", env[j]);
+		//printf("My_env: %s\n", my_env[j]);
+		j++;
 	}
-	if (!str[i])
+	my_env[j] = NULL;
+
+	while (my_env[k] != NULL)
 	{
-		position = NULL;
-		return(str);
+		if (temp = strstr(my_env[k], name))
+		{
+			printf("%s\n", temp + strlen(name) + 1);
+			break;
+		}
+		k++;
 	}
-	return (NULL);
+	//printf("%s\n", token);
 }
 
 int main()
 {
-	int i = 0;
-	while (environ[i] != NULL)
-	{
-		printf("%s\n", environ[i++]);
-	}
+	_getenv("PATH");
 	exit(98);
 }
