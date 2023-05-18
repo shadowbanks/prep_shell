@@ -10,9 +10,9 @@
  */
 int main(int ac, char **av, char **env)
 {
-	int i = 0, status;
-	char *lineptr = NULL, *pmt = "# ", *argv[] = {"", NULL};
-	char *token;
+	int i = 0, status, create = 0;
+	char *lineptr = NULL, *command = NULL, *pmt = "# ", *argv[] = {"", NULL};
+	char *token, *original_path = getenv("PATH"), *path = NULL;
 	size_t n = 0;
 	ssize_t gline;
 	pid_t cpid;
@@ -49,8 +49,14 @@ int main(int ac, char **av, char **env)
 			continue;
 		}
 
-		if (searchfile(argv, env) == 1)
+		printf("Just before check [%d]\n", getpid());
+
+		path = strdup(original_path); //create a copy of the original path
+		if (command = searchfile(argv, path))
+		{
+			printf("FOUND");
 			cpid = fork(); /*start a child process*/
+		}
 		else
 			continue;
 		/*
@@ -66,17 +72,18 @@ int main(int ac, char **av, char **env)
 		}
 		*/
 
-		printf("I got printed? hmmm\n");
 		if (cpid == -1)
-			perror("Error:");
+			perror("CPID Error:");
+
+		printf("I [%d] got printed? hmmm\n", getpid());
 
 		if (cpid == 0)
 		{
-			argv[0] = lineptr; /*assign the command read by getline*/
+			argv[0] = command; /*assign the command read by getline*/
 
 			if (execve(argv[0], argv, env) == -1)
 			{
-				perror("Error");
+				perror("EXECVE Error");
 				exit(1);
 			}
 		}
@@ -87,41 +94,41 @@ int main(int ac, char **av, char **env)
 	return (0);
 }
 
-int searchfile(char *av[], char **env)
+char *searchfile(char **av, char *path)
 {
 	struct stat stbuf;
-	char *path = getenv("PATH"), *path_dir = NULL, *buff = NULL;
+	/*char *path = getenv("PATH");*/
+	char *path_dir = NULL, *buff = NULL;
 	int i;
 
-	/*printf("PATH\n----\n%s\n", path);*/
+	printf("PATH\n----\n%s\n", path);
 	path_dir = strtok(path, ":");
 
-	i = 1;
+	/*i = 1;*/
+	printf("First token %s\n", path_dir);
 	while(path_dir)
 	{
-		while (av[i])
-		{
-			buff = malloc(strlen(path_dir) + strlen(av[i]) + 2);
-			if (buff == NULL)
-				return (1);
-			strcpy(buff, path_dir);
-			strcat(buff, "/");
-			strcat(buff, av[i]);
+		i = 0;
+		//printf("Just before the loop av[%d]: %s\n", i, av[i]);
+		printf("av[%d]: %s\n", i, av[i]);
+		buff = malloc(strlen(path_dir) + strlen(av[i]) + 2);
+		if (buff == NULL)
+			return (NULL);
+		strcpy(buff, path_dir);
+		strcat(buff, "/");
+		strcat(buff, av[i]);
 
-			if (stat(buff, &stbuf) == 0)
-			{
-				printf("FOUND\n");
-				return (1);
-			}
-			else
-			{
-				printf("%s: NOT FOUND\n", buff);
-				return (-1);
-			}
+		printf("buff before search: %s\n", buff);
+		if (stat(buff, &stbuf) == 0)
+		{
+			printf("FOUND IN SEARCH\n");
+			return (buff);
 		}
 
 		//printf("%s\n", path_dir);
 		path_dir = strtok(NULL, ":");
 	}
-	return (-1);
+	printf("%s: NOT FOUND\n", buff);
+	free(buff);
+	return (NULL);
 }

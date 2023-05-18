@@ -19,9 +19,9 @@ int main(int ac, char **av, char **env)
 	printf("PATH\n----\n%s\n", path);
 	path_dir = strtok(path, ":");
 
-	i = 1;
 	while(path_dir)
 	{
+		i = 1;
 		while (av[i])
 		{
 			buff = malloc(strlen(path_dir) + strlen(av[i]) + 2);
@@ -41,6 +41,7 @@ int main(int ac, char **av, char **env)
 				printf("%s: NOT FOUND\n", buff);
 				break;
 			}
+			i++;
 		}
 
 		//printf("%s\n", path_dir);

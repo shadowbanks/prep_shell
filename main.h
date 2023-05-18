@@ -10,6 +10,6 @@
 #include <sys/stat.h>
 
 
-int searchfile(char *[], char **env);
+char *searchfile(char **argv, char *path);
 
 #endif /*MAIN_H*/
