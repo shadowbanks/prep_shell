@@ -88,7 +88,10 @@ int main(int ac, char **av, char **env)
 			}
 		}
 		else
+		{
 			wait(&status);/*wait for child process to end*/
+			printf("Wait status: %d\n", status);
+		}
 	}
 	free(lineptr);
 	return (0);
