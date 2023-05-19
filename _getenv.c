@@ -23,18 +23,22 @@ char *_getenv(const char *name)
 	{
 		my_env[j] = malloc(strlen(env[j] + 1)); 
 		strcpy(my_env[j], env[j]);
-		//printf("env: %s\n\n", env[j]);
-		//printf("My_env: %s\n", my_env[j]);
+		//printf("env: %s\n", env[j]);
+		//printf("My_env: %s\n\n", my_env[j]);
 		j++;
 	}
 	my_env[j] = NULL;
 
 	while (my_env[k] != NULL)
 	{
+		//printf("%s\n", my_env[k]);
 		if (temp = strstr(my_env[k], name))
 		{
-			printf("%s\n", temp + strlen(name) + 1);
-			break;
+			if (temp[strlen(name)] == '=')
+			{
+				printf("%s\n", temp + strlen(name) + 1);
+				break;
+			}
 		}
 		k++;
 	}
