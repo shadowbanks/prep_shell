@@ -58,10 +58,13 @@ int main(int ac, char **av)
 		exit(98);
 	}
 	tok = _strtok(av[1], av[2]);
-
+/*
 	while (tok)
 	{
 		printf("%s\n", tok);
 		tok = _strtok(NULL, av[2]);
 	}
+	*/
+	printf("%s\n", tok);
+	printf("%s\n", av[2]);
 }

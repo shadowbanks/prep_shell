@@ -14,10 +14,13 @@ int main(int ac, char **av)
 	}
 
 	tok = strtok(av[1], av[2]);
-
+/*
 	while (tok)
 	{
 		printf("%s\n", tok);
 		tok = strtok(NULL, av[2]);
 	}
+	*/
+	printf("%s\n", tok);
+	printf("%s\n", av[2]);
 }
