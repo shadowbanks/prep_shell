@@ -17,6 +17,9 @@ int main(int ac, char **av, char **env)
 	ssize_t gline;
 	pid_t cpid;
 	struct stat st;
+	int result;
+	char prev_dir[100] = "";
+	char *dir = NULL;
 
 	while (gline != EOF)
 	{
@@ -71,6 +74,36 @@ int main(int ac, char **av, char **env)
 				if (argv[1])
 					return (atoi(argv[1]));
 				return (0);
+			}
+
+			if (strcmp(argv[0], "cd") == 0)
+			{
+				dir = argv[1];
+				if (!dir)
+					strcpy(dir, "/root");
+				if (strcmp(dir, "-") == 0)
+				{
+					if (strlen(prev_dir) > 0)
+					{
+						result = chdir(prev_dir);
+						//printf("%s", prev_dir);
+						if (!result)
+						{
+							perror("Error");
+							break;
+						}
+					}
+				}
+				else
+				{
+					if (chdir(dir) != 0)
+						perror("Error");
+					//else
+						//printf("changed %s\n", dir);
+				}
+				if (getcwd(prev_dir, sizeof(prev_dir)) == NULL)
+					perror("Error");
+				break;
 			}
 
 			path = strdup(original_path); //create a copy of the original path
