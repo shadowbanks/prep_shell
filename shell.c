@@ -10,9 +10,9 @@
  */
 int main(int ac, char **av, char **env)
 {
-	int i = 0, status, create = 0;
-	char *lineptr = NULL, *command = NULL, *pmt = "# ", *argv[] = {"", NULL};
-	char *token, *original_path = getenv("PATH"), *path = NULL;
+	int i = 0, status, create = 0, k = 0;
+	char *lineptr = NULL, *command = NULL, *pmt = "# ", *argv[] = {"", NULL}, *tokens[50];
+	char *token, *original_path = getenv("PATH"), *path = NULL, *token1 = NULL;
 	size_t n = 0;
 	ssize_t gline;
 	pid_t cpid;
@@ -34,58 +34,76 @@ int main(int ac, char **av, char **env)
 		}
 
 		i = 0;
-
-		token = strtok(lineptr, " ");
-
-		while (token)
+		token1 = strtok(lineptr, ";");
+		while (token1)
 		{
-			argv[i] = token;
-			token = strtok(NULL, " ");
+			tokens[i] = token1;
+			token1 = strtok(NULL, ";");
+			printf("TEST token1[%d]: %s\n", i, tokens[i]);
 			i++;
 		}
-		argv[i] = NULL;
-		if (argv[0] == NULL)
+		tokens[i] = NULL;
+		printf("TEST: %s\n", token1);
+
+		k = 0;
+		while (tokens[k])
 		{
-			continue;
-		}
+			i = 0;
+			token = strtok(tokens[k], " ");
 
-		printf("Just before check [%d]\n", getpid());
-
-		if (strcmp(argv[0], "exit") == 0)
-		{
-			if (argv[1])
-				return (atoi(argv[1]));
-			return (0);
-		}
-
-		path = strdup(original_path); //create a copy of the original path
-		if (command = searchfile(argv, path))
-		{
-			printf("FOUND: %s\n", command);
-			cpid = fork(); /*start a child process*/
-		}
-		else
-			continue;
-
-		if (cpid == -1)
-			perror("CPID Error:");
-
-		printf("I [%d] got printed? hmmm\n", getpid());
-
-		if (cpid == 0)
-		{
-			argv[0] = command; /*assign the command read by getline*/
-
-			if (execve(argv[0], argv, env) == -1)
+			while (token)
 			{
-				perror("EXECVE Error");
-				exit(1);
+				argv[i] = token;
+				token = strtok(NULL, " ");
+				printf("TEST argv: %s\n", argv[i]);
+				i++;
 			}
-		}
-		else
-		{
-			wait(&status);/*wait for child process to end*/
-			printf("Wait status: %d\n", status>>8);
+			argv[i] = NULL;
+			if (argv[0] == NULL)
+			{
+				continue;
+			}
+
+			printf("Just before check [%d]\n", getpid());
+
+			if (strcmp(argv[0], "exit") == 0)
+			{
+				if (argv[1])
+					return (atoi(argv[1]));
+				return (0);
+			}
+
+			path = strdup(original_path); //create a copy of the original path
+			if (command = searchfile(argv, path))
+			{
+				printf("FOUND: %s\n", command);
+				cpid = fork(); /*start a child process*/
+			}
+			else
+				continue;
+
+			if (cpid == -1)
+				perror("CPID Error:");
+
+			printf("I [%d] got printed? hmmm\n", getpid());
+
+			if (cpid == 0)
+			{
+				argv[0] = command; /*assign the command read by getline*/
+
+				if (execve(argv[0], argv, env) == -1)
+				{
+					perror("EXECVE Error");
+					exit(1);
+				}
+			}
+			else
+			{
+				wait(&status);/*wait for child process to end*/
+				printf("Wait status: %d\n", status>>8);
+			}
+			k++;
+			printf("NEXT token1: %s\n", tokens[k]);
 		}
 	}
 	free(lineptr);
