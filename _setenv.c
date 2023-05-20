@@ -2,10 +2,10 @@
 
 int _setenv(const char *name, const char *value, int overwrite)
 {
-	int size = 0, j = 0, k = 0, l = 0;
-	char **my_env = NULL, **env = environ, *temp = NULL, *new_env = NULL, **temp_env = NULL;
+	int size = 0, j = 0, k = 0, l = 0, i = 0;
+	char **my_env = NULL,  *temp = NULL, *new_env = NULL, **temp_env = NULL;
 
-	while (env[size++]);
+	while (environ[size++]);
 
 	//
 	my_env = malloc(sizeof(char *) * (size + 1));
@@ -13,9 +13,9 @@ int _setenv(const char *name, const char *value, int overwrite)
 			return (-1);
 
 	//Make a copy of environ(env)
-	while(env[j])
+	while(environ[j])
 	{
-		my_env[j] = malloc(strlen(env[j]) + 1);
+		my_env[j] = malloc(strlen(environ[j]) + 1);
 		if (!my_env[j])
 		{
 			while (j)
@@ -23,7 +23,7 @@ int _setenv(const char *name, const char *value, int overwrite)
 			free(my_env);
 			return (-1);
 		}
-		strcpy(my_env[j], env[j]);
+		strcpy(my_env[j], environ[j]);
 		j++;
 	}
 
@@ -86,7 +86,6 @@ int _setenv(const char *name, const char *value, int overwrite)
 		//printf("Works fine\n");
 	}
 	//my_env[size - 1] = NULL;
-
 	environ = my_env;
 
 	return (0);
@@ -115,22 +114,24 @@ int _unsetenv(const char *name)
 			k++;
 			continue;
 		}
-		my_env[i] = malloc(strlen(environ[k]) + 1);
+		/*my_env[i] = malloc(strlen(environ[k]) + 1);
 		if (!my_env[i])
 		{
 			while(i)
 				free(my_env[--i]);
 			free(my_env);
 			return (-1);
-		}
+		}*/
+		if (i != k)
+			environ[i] = environ[k];
 		//printf("%s\n", environ[k]);
-		strcpy(my_env[i], environ[k]);
+		//strcpy(my_env[i], environ[k]);
 	//	printf("%s k: %d\n", my_env[k], k);
 		k++, i++;
 	}
 	//printf("size: %d, %s k-1: %d\n", size, my_env[k-1], k-1);
-	my_env[i] = NULL;
-	environ = my_env;
+	//my_env[i] = NULL;
+	environ[i] = NULL;
 	return (0);
 }
 
@@ -146,7 +147,7 @@ int main()
 	_unsetenv("VIP2");
 	_setenv("VIP2", "Ghost", 0);
 	_unsetenv("VIP2");
-	_unsetenv("TEST");
+	//_unsetenv("TEST");
 
 	while (environ[i])
 	{
@@ -157,5 +158,4 @@ int main()
 	while (environ[i])
 		free(environ[i++]);
 	free(environ);
-
 }
