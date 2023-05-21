@@ -19,7 +19,7 @@ int main(int ac, char **av, char **env)
 	struct stat st;
 	int result;
 	char prev_dir[100] = "";
-	char *dir = NULL;
+	char *dir = NULL, *prev = NULL;
 
 	while (gline != EOF)
 	{
@@ -35,7 +35,18 @@ int main(int ac, char **av, char **env)
 		{
 			lineptr[gline - 1] = '\0';
 		}
-
+/*
+		if (strcmp(lineptr, "cd") == 0)
+		{
+			if (chdir("/home") != 0)
+			{
+				perror("chdir");
+			}
+			else
+				printf("Current directory\n");
+			continue;
+		}
+*/
 		i = 0;
 		token1 = strtok(lineptr, ";");
 		while (token1)
@@ -76,33 +87,59 @@ int main(int ac, char **av, char **env)
 				return (0);
 			}
 
+			dir = NULL;
+
 			if (strcmp(argv[0], "cd") == 0)
 			{
-				dir = argv[1];
+				printf("I'm here\n");
+				if (argv[1])
+				{
+					printf("Here???\n");
+					dir = argv[1];
+				}
 				if (!dir)
-					strcpy(dir, "/root");
+				{
+					printf("In here\n");
+					dir = "/home";
+				}
+				printf("Checking\n");
 				if (strcmp(dir, "-") == 0)
 				{
-					if (strlen(prev_dir) > 0)
+					printf("This is -\n");
+					if (prev != NULL)
 					{
-						result = chdir(prev_dir);
+						printf("Check prev: %s\n", prev);
+						if (getcwd(prev_dir, sizeof(prev_dir)) == NULL)
+							perror("Error");
+						result = chdir(prev);
 						//printf("%s", prev_dir);
 						if (!result)
 						{
 							perror("Error");
 							break;
 						}
+						prev = prev_dir;
 					}
+					else
+					{
+						printf("cd: OLDPWD not set\n");
+						break;
+					}
+
 				}
 				else
 				{
-					if (chdir(dir) != 0)
+					if (getcwd(prev_dir, sizeof(prev_dir)) == NULL)
 						perror("Error");
+					if (chdir(dir) != 0)
+					{
+						perror("Error");
+						break;
+					}
+					prev = prev_dir;
 					//else
 						//printf("changed %s\n", dir);
 				}
-				if (getcwd(prev_dir, sizeof(prev_dir)) == NULL)
-					perror("Error");
 				break;
 			}
 
@@ -113,7 +150,7 @@ int main(int ac, char **av, char **env)
 				cpid = fork(); /*start a child process*/
 			}
 			else
-				continue;
+				break;
 
 			if (cpid == -1)
 				perror("CPID Error:");
