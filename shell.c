@@ -13,15 +13,16 @@ int main(int ac, char **av, char **env)
 	int i = 0, status, create = 0, k = 0;
 	char *lineptr = NULL, *command = NULL, *pmt = "# ", *argv[] = {"", NULL}, *tokens[50];
 	char *token, *original_path = getenv("PATH"), *path = NULL, *token1 = NULL;
-	size_t n = 0;
+	size_t n = 0, z = 0;
 	ssize_t gline;
 	pid_t cpid;
 	struct stat st;
 	int result;
-	char prev_dir[100] = "";
-	char *dir = NULL, *prev = NULL;
+	char prev_dir[100] = "", pwd[100] = "";
+	char *dir = NULL, prev[100] = "";
 
-	while (gline != EOF)
+//	while (gline != EOF)
+	while (1)
 	{
 		write(1, pmt, 2);
 		gline = getline(&lineptr, &n, stdin);
@@ -53,11 +54,11 @@ int main(int ac, char **av, char **env)
 		{
 			tokens[i] = token1;
 			token1 = strtok(NULL, ";");
-			printf("TEST token1[%d]: %s\n", i, tokens[i]);
+			//printf("TEST token1[%d]: %s\n", i, tokens[i]);
 			i++;
 		}
 		tokens[i] = NULL;
-		printf("TEST: %s\n", token1);
+		//printf("TEST: %s\n", token1);
 
 		k = 0;
 		while (tokens[k])
@@ -69,7 +70,7 @@ int main(int ac, char **av, char **env)
 			{
 				argv[i] = token;
 				token = strtok(NULL, " ");
-				printf("TEST argv: %s\n", argv[i]);
+				//printf("TEST argv: %s\n", argv[i]);
 				i++;
 			}
 			argv[i] = NULL;
@@ -78,7 +79,7 @@ int main(int ac, char **av, char **env)
 				continue;
 			}
 
-			printf("Just before check [%d]\n", getpid());
+			//printf("Just before check [%d]\n", getpid());
 
 			if (strcmp(argv[0], "exit") == 0)
 			{
@@ -91,38 +92,39 @@ int main(int ac, char **av, char **env)
 
 			if (strcmp(argv[0], "cd") == 0)
 			{
-				printf("I'm here\n");
+				//printf("I'm here\n");
 				if (argv[1])
 				{
-					printf("Here???\n");
+					//printf("Here???\n");
 					dir = argv[1];
 				}
 				if (!dir)
 				{
-					printf("In here\n");
+					//printf("In here\n");
 					dir = "/home";
 				}
-				printf("Checking\n");
+				//printf("Checking\n");
 				if (strcmp(dir, "-") == 0)
 				{
-					printf("This is -\n");
-					if (prev != NULL)
+					//printf("This is -\n");
+					if (strlen(prev) != 0)
 					{
-						printf("Check prev: %s\n", prev);
+						//printf("Check prev: %s\n", prev);
 						if (getcwd(prev_dir, sizeof(prev_dir)) == NULL)
 							perror("Error");
-						result = chdir(prev);
+						//printf("PWD: %s\n", prev_dir);
+						//result = chdir(prev);
 						//printf("%s", prev_dir);
-						if (!result)
+						if (chdir(prev) != 0)
 						{
 							perror("Error");
 							break;
 						}
-						prev = prev_dir;
+						strcpy(prev, prev_dir);
 					}
 					else
 					{
-						printf("cd: OLDPWD not set\n");
+						//printf("cd: OLDPWD not set\n");
 						break;
 					}
 
@@ -136,7 +138,7 @@ int main(int ac, char **av, char **env)
 						perror("Error");
 						break;
 					}
-					prev = prev_dir;
+					strcpy(prev, prev_dir);
 					//else
 						//printf("changed %s\n", dir);
 				}
@@ -146,16 +148,24 @@ int main(int ac, char **av, char **env)
 			path = strdup(original_path); //create a copy of the original path
 			if (command = searchfile(argv, path))
 			{
-				printf("FOUND: %s\n", command);
+				//printf("FOUND: %s\n", command);
 				cpid = fork(); /*start a child process*/
 			}
 			else
+			{
+				//Handle Error massage
+				//while(argv[0][z++]);
+				write(2, argv[0], strlen(argv[0]));
+				//write(2, "command not found" 17);
+				write(2, "\n", 1);
+				//printf("ma: command not found%ld\n", z);
 				break;
+			}
 
 			if (cpid == -1)
 				perror("CPID Error:");
 
-			printf("I [%d] got printed? hmmm\n", getpid());
+			//printf("I [%d] got printed? hmmm\n", getpid());
 
 			if (cpid == 0)
 			{
@@ -173,10 +183,12 @@ int main(int ac, char **av, char **env)
 				printf("Wait status: %d\n", status>>8);
 			}
 			k++;
-			printf("NEXT token1: %s\n", tokens[k]);
+			//printf("NEXT token1: %s\n", tokens[k]);
 		}
 	}
+	//printf("\nbefore END\n");
 	free(lineptr);
+	//printf("\nEND\n");
 	return (0);
 }
 
@@ -187,16 +199,16 @@ char *searchfile(char **av, char *path)
 	char *path_dir = NULL, *buff = NULL;
 	int i;
 
-	printf("PATH\n----\n%s\n", path);
+	//printf("PATH\n----\n%s\n", path);
 	path_dir = strtok(path, ":");
 
 	/*i = 1;*/
-	printf("First token %s\n", path_dir);
+	//printf("First token %s\n", path_dir);
 	while(path_dir)
 	{
 		i = 0;
 		//printf("Just before the loop av[%d]: %s\n", i, av[i]);
-		printf("av[%d]: %s\n", i, av[i]);
+		//printf("av[%d]: %s\n", i, av[i]);
 		if (av[i][0] != '/' && av[i][0] != '.')
 		{
 			buff = malloc(strlen(path_dir) + strlen(av[i]) + 2);
@@ -214,17 +226,17 @@ char *searchfile(char **av, char *path)
 			strcpy(buff, av[i]);
 		}
 
-		printf("buff before search: %s\n", buff);
+		//printf("buff before search: %s\n", buff);
 		if (stat(buff, &stbuf) == 0)
 		{
-			printf("FOUND IN SEARCH\n");
+			//printf("FOUND IN SEARCH\n");
 			return (buff);
 		}
 
 		//printf("%s\n", path_dir);
 		path_dir = strtok(NULL, ":");
 	}
-	printf("%s: NOT FOUND\n", buff);
+	//printf("%s: NOT FOUND\n", buff);
 	free(buff);
 	return (NULL);
 }
