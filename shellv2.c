@@ -31,7 +31,7 @@ int prompt(char *original_path, char **env, int *status)
 }
 
 
-int get_token(char *lineptr, char *original_path, char **env,int *status)
+int get_token(char *lineptr, char *original_path, char **env, int *status)
 {
 	char *token1 = NULL, *tokens[50];
 	int i;
@@ -54,6 +54,7 @@ int handle_args(char **tokens, char *original_path, char **env, int *status)
 	char *dir = NULL, prev[100] = "", prev_dir[100] = "";
 	char *argv[100] = {"", NULL};
 	int k;
+
 	k = 0;
 	while (tokens[k])
 	{
@@ -89,9 +90,10 @@ int handle_args(char **tokens, char *original_path, char **env, int *status)
 				}
 				else
 				{
-					//Don't use printf
-					//
-					//
+					/**
+					 * Don't use printf
+					 *
+					 */
 					printf("cd: OLDPWD not set\n");
 					break;
 				}
@@ -124,7 +126,8 @@ int exe_command(char **argv, char *original_path, char **env, int *status)
 	pid_t cpid;
 
 	path = strdup(original_path); /*create a copy of the original path*/
-	if (command = searchfile(argv, path))
+	command = searchfile(argv, path);
+	if (command)
 	{
 		cpid = fork(); /*start a child process*/
 	}
@@ -154,7 +157,7 @@ int exe_command(char **argv, char *original_path, char **env, int *status)
 	else
 	{
 		wait(status);/*wait for child process to end*/
-		printf("Wait status: %d\n", *status>>8);
+		printf("Wait status: %d\n", *status >> 8);
 		return (*status);
 	}
 	return (0);
@@ -189,25 +192,16 @@ char **split_args(char **tokens, char **argv, int k)
  */
 int main(int ac, char **av, char **env)
 {
-	int i = 0, status, create = 0, k = 0;
-	char *lineptr = NULL, *command = NULL, *pmt = "# ", *argv[] = {"", NULL}, *tokens[50];
-	char *token, *original_path = getenv("PATH"), *path = NULL, *token1 = NULL;
-	size_t n = 0, z = 0;
-	ssize_t gline;
-	pid_t cpid;
-	struct stat st;
-	int result;
-	char prev_dir[100] = "", pwd[100] = "";
-	char *dir = NULL, prev[100] = "";
+	int i = 0, status, a = 1;
+	char *original_path = getenv("PATH");
 
-//	while (gline != EOF)
-	while (1)
+	while (a)
 	{
 		i = prompt(original_path, env, &status);
 		if (i == 1)
 			continue;
-		else if(i == 7)
-			break;
+		else if (i == 7)
+			a = 0;
 		else
 			exit(status);
 	}
@@ -222,16 +216,11 @@ char *searchfile(char **av, char *path)
 	char *path_dir = NULL, *buff = NULL;
 	int i;
 
-	//printf("PATH\n----\n%s\n", path);
 	path_dir = strtok(path, ":");
 
-	/*i = 1;*/
-	//printf("First token %s\n", path_dir);
-	while(path_dir)
+	while (path_dir)
 	{
 		i = 0;
-		//printf("Just before the loop av[%d]: %s\n", i, av[i]);
-		//printf("av[%d]: %s\n", i, av[i]);
 		if (av[i][0] != '/' && av[i][0] != '.')
 		{
 			buff = malloc(strlen(path_dir) + strlen(av[i]) + 2);
@@ -249,17 +238,13 @@ char *searchfile(char **av, char *path)
 			strcpy(buff, av[i]);
 		}
 
-		//printf("buff before search: %s\n", buff);
 		if (stat(buff, &stbuf) == 0)
 		{
-			//printf("FOUND IN SEARCH\n");
 			return (buff);
 		}
 
-		//printf("%s\n", path_dir);
 		path_dir = strtok(NULL, ":");
 	}
-	//printf("%s: NOT FOUND\n", buff);
 	free(buff);
 	return (NULL);
 }
