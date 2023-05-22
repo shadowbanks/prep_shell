@@ -1,12 +1,115 @@
 #include "main.h"
 
-char **split_args(char **tokens, char **argv, int k);
-int exe_command(char **argv, char *original_path, char **env, int *status);
-int handle_args(char **tokens, char *original_path, char **env, int *status);
-int get_token(char *lineptr, char *original_path, char **env, int *status);
-int prompt(char *original_path, char **env, int *status);
 
-int prompt(char *original_path, char **env, int *status)
+
+int _setenv(const char *name, const char *value, int overwrite);
+char **split_args(char **tokens, char **argv, int k);
+int exe_command(char **argv, char *original_path, int *status);
+int handle_args(char **tokens, char *original_path, int *status);
+int get_token(char *lineptr, char *original_path, int *status);
+int prompt(char *original_path, int *status);
+char *new_env_var(const char *name, const char *value);
+char *env_copy(void);
+int _setenv(const char *name, const char *value, int overwrite);
+int handle_cd(char **argv);
+
+int handle_cd(char **argv)
+{
+	char *dir = NULL, prev[100] = "", prev_dir[100] = "";
+
+	if (argv[1])
+		dir = argv[1];
+	if (!dir)
+		dir = "/home";
+	if (strcmp(dir, "-") == 0)
+	{
+		if (strlen(prev) != 0)
+		{
+			if (getcwd(prev_dir, sizeof(prev_dir)) == NULL)
+				perror("Error");
+			if (chdir(prev) != 0)
+			{
+				perror("Error");
+				return (9);
+			}
+			strcpy(prev, prev_dir);
+		}
+		else
+		{
+			/**
+			 * Don't use printf
+			 *
+			 */
+			printf("cd: OLDPWD not set\n");
+			return (9);
+		}
+
+	}
+	else
+	{
+		if (getcwd(prev_dir, sizeof(prev_dir)) == NULL)
+			perror("Error");
+		if (chdir(dir) != 0)
+		{
+			perror("Error");
+			return (9);
+		}
+		strcpy(prev, prev_dir);
+	}
+	return (9);
+}
+
+int _setenv(const char *name, const char *value, int overwrite)
+{
+	printf("%s\n%s\n%d\n", name, value, overwrite);
+
+	return (0);
+}
+
+char *env_copy(void)
+{
+	int j = 0, size = 0;
+	char **my_env = NULL;
+
+	/*get the number of environment*/
+	while (environ[size++]);
+
+	/* */
+	my_env = malloc(sizeof(char *) * (size + 1));
+	if (!my_env)
+		return (NULL);
+
+	while (environ[j])
+	{
+		my_env[j] = malloc(strlen(environ[j]) + 1);
+		if (!my_env[j])
+		{
+			while (j)
+				free(my_env[--j]);
+			free(my_env);
+			return (NULL);
+		}
+		strcpy(my_env[j], environ[j]);
+		j++;
+	}
+	return (NULL);
+}
+
+char *new_env_var(const char *name, const char *value)
+{
+	char *new_env = NULL;
+
+	new_env = malloc(strlen(name) + strlen(value) + 2);
+	if (!new_env)
+		return (NULL);
+	strcpy(new_env, name);
+	strcat(new_env, "=");
+	strcat(new_env, value);
+
+	return (new_env);
+}
+
+int prompt(char *original_path, int *status)
 {
 	ssize_t gline;
 	size_t n = 0;
@@ -16,27 +119,37 @@ int prompt(char *original_path, char **env, int *status)
 	gline = getline(&lineptr, &n, stdin);
 
 	if (gline == -1)
-		return (-1);
+	{
+		free(lineptr);
+		if (gline == EOF)
+			return (7);
+		else
+			return (-1);
+	}
 	if (gline == 1)/*Check if nothing was typed i.e press only enter key */
+	{
+		free(lineptr);
 		return (1);
+	}
 
-	if (gline == EOF)
-		return (7);
 	if (lineptr[gline - 1] == '\n')
 		lineptr[gline - 1] = '\0';
 
-	if (get_token(lineptr, original_path, env, status) == 99)
+	if (get_token(lineptr, original_path, status) == 99)
+	{
+		free(lineptr);
 		return (-1);
+	}
+
+	free(lineptr);
 	return (1);
 }
 
 
-int get_token(char *lineptr, char *original_path, char **env, int *status)
+int get_token(char *lineptr, char *original_path, int *status)
 {
 	char *token1 = NULL, *tokens[50];
-	int i;
-
-	i = 0;
+	int i= 0;
 	token1 = strtok(lineptr, ";");
 	while (token1)
 	{
@@ -46,12 +159,11 @@ int get_token(char *lineptr, char *original_path, char **env, int *status)
 	}
 	tokens[i] = NULL;
 
-	return (handle_args(tokens, original_path, env, status));
+	return (handle_args(tokens, original_path, status));
 }
 
-int handle_args(char **tokens, char *original_path, char **env, int *status)
+int handle_args(char **tokens, char *original_path, int *status)
 {
-	char *dir = NULL, prev[100] = "", prev_dir[100] = "";
 	char *argv[100] = {"", NULL};
 	int k;
 
@@ -67,52 +179,13 @@ int handle_args(char **tokens, char *original_path, char **env, int *status)
 			return (99);
 		}
 
-		dir = NULL;
 
 		if (strcmp(argv[0], "cd") == 0)
 		{
-			if (argv[1])
-				dir = argv[1];
-			if (!dir)
-				dir = "/home";
-			if (strcmp(dir, "-") == 0)
-			{
-				if (strlen(prev) != 0)
-				{
-					if (getcwd(prev_dir, sizeof(prev_dir)) == NULL)
-						perror("Error");
-					if (chdir(prev) != 0)
-					{
-						perror("Error");
-						break;
-					}
-					strcpy(prev, prev_dir);
-				}
-				else
-				{
-					/**
-					 * Don't use printf
-					 *
-					 */
-					printf("cd: OLDPWD not set\n");
-					break;
-				}
-
-			}
-			else
-			{
-				if (getcwd(prev_dir, sizeof(prev_dir)) == NULL)
-					perror("Error");
-				if (chdir(dir) != 0)
-				{
-					perror("Error");
-					break;
-				}
-				strcpy(prev, prev_dir);
-			}
-			break;
+			if (handle_cd(argv) == 9)
+				break;
 		}
-		exe_command(argv, original_path, env, status);
+		exe_command(argv, original_path, status);
 		if (*status == -1)
 			break;
 		k++;
@@ -120,7 +193,7 @@ int handle_args(char **tokens, char *original_path, char **env, int *status)
 	return (*status);
 }
 
-int exe_command(char **argv, char *original_path, char **env, int *status)
+int exe_command(char **argv, char *original_path, int *status)
 {
 	char *path = NULL, *command = NULL;
 	pid_t cpid;
@@ -141,6 +214,7 @@ int exe_command(char **argv, char *original_path, char **env, int *status)
 		 */
 		write(2, argv[0], strlen(argv[0]));
 		write(2, "\n", 1);
+
 		return (-1);
 	}
 	if (cpid == -1)
@@ -148,7 +222,7 @@ int exe_command(char **argv, char *original_path, char **env, int *status)
 	if (cpid == 0)
 	{
 		argv[0] = command; /*assign the command read by getline*/
-		if (execve(argv[0], argv, env) == -1)
+		if (execve(argv[0], argv, environ) == -1)
 		{
 			perror("EXECVE Error");
 			exit(1);
@@ -157,9 +231,13 @@ int exe_command(char **argv, char *original_path, char **env, int *status)
 	else
 	{
 		wait(status);/*wait for child process to end*/
+		free(command);
+		free(path);
 		printf("Wait status: %d\n", *status >> 8);
 		return (*status);
 	}
+	free(path);
+	free(command);
 	return (0);
 }
 
@@ -180,33 +258,6 @@ char **split_args(char **tokens, char **argv, int k)
 	argv[i] = NULL;
 
 	return (argv);
-}
-
-/**
- * main - Shell program
- * @ac: argument counter
- * @av: argument variable
- * @env: environment variables
- *
- * Return: 0 (on success)
- */
-int main(int ac, char **av, char **env)
-{
-	int i = 0, status, a = 1;
-	char *original_path = getenv("PATH");
-
-	while (a)
-	{
-		i = prompt(original_path, env, &status);
-		if (i == 1)
-			continue;
-		else if (i == 7)
-			a = 0;
-		else
-			exit(status);
-	}
-	printf("Done\n");
-	return (0);
 }
 
 char *searchfile(char **av, char *path)
@@ -243,8 +294,35 @@ char *searchfile(char **av, char *path)
 			return (buff);
 		}
 
+		free(buff);
 		path_dir = strtok(NULL, ":");
 	}
-	free(buff);
 	return (NULL);
+}
+
+/**
+ * main - Shell program
+ * @ac: argument counter
+ * @av: argument variable
+ * @env: environment variables
+ *
+ * Return: 0 (on success)
+ */
+int main(void)
+{
+	int i = 0, status, a = 1;
+	char *original_path = getenv("PATH");
+
+	while (a)
+	{
+		i = prompt(original_path, &status);
+		if (i == 1)
+			continue;
+		else if (i == 7)
+			a = 0;
+		else
+			exit(status);
+	}
+	printf("Done\n");
+	return (0);
 }
