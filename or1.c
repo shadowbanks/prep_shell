@@ -8,11 +8,11 @@ int main()
 {
 	int status;
 	char *commands = NULL;
-	char *command;
-	size_t bufsize = 0, length;
-	char *args[200], *token;
-	int i;
+	char *command, *token;
+	size_t bufsize = 0;
+	int length, i;
 	pid_t pid;
+	char *args[200];
 
 	while (1)
 	{
@@ -24,20 +24,19 @@ int main()
 		}
 		
 		length = strlen(commands);
-     
-		command = strtok(commands, "&&");
 
+		command = strtok(commands, "||");
+		
 		while (command != NULL)
 		{
-	
-			if (commands[length - 1] == '\n')
+			if (command[length - 1] == '\n')
 			{
-				commands[length - 1] == '\0';
-			}            
+				command[length - 1] = '\0';
+			}
 			i = 0;
-				
+			
 			token = strtok(command, " ");
-
+			
 			while (token != NULL)
 			{
 				args[i++] = token;
@@ -49,32 +48,31 @@ int main()
 			
 			if (pid == 0)
 			{
-				if (execve(args[0], args, NULL) == -1);
+				if(execve(args[0], args, NULL) == -1)
 				{
-					printf("%s", args[0]);
 					perror("Error executing command");
 					exit(1);
 				}
 			}
-		
-		     	else if (pid > 0)
+			
+			else if (pid > 0)
 			{
 				wait(&status);
-
-
-				if (status != 0)
-				{
-					perror("Error");
-					free(commands);
-					break;
-				}
+				
+				if(status == 0)
+				break;
 			}
-			
-			command = strtok(NULL, "&&");
+		
+			else
+			{
+				perror("Error");
+				exit(1);
+			}
+			 
+		command = strtok(NULL, "||");
 		}
 	}
 
 	free(commands);
-	return (0);
+	return(0);
 }
-
