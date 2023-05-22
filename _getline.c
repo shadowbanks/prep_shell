@@ -45,7 +45,9 @@ ssize_t _getline(char **lineptr, size_t *n, FILE *stream)
 		return (-1);
 	}
 	(*lineptr)[red] = '\0';
-	return (red);
+
+	/*Return 0 when end of line is reached*/
+	return (red);/*use == 0 to check for EOF*/
 }
 
 /**

@@ -1,8 +1,5 @@
 #include "main.h"
 
-
-char *_strtok(char *str, const char *delim);
-
 char *_getenv(const char *name)
 {
 	int i = 0, j = 0, k = 0;
@@ -21,10 +18,10 @@ char *_getenv(const char *name)
 	my_env = malloc(sizeof(char *) * (i + 1));
 
 	//Make a copy of environ
-	while(env[j])
+	while(environ[j])
 	{
-		my_env[j] = malloc(strlen(env[j]) + 1); 
-		strcpy(my_env[j], env[j]);
+		my_env[j] = malloc(strlen(environ[j]) + 1); 
+		strcpy(my_env[j], environ[j]);
 		//printf("env: %s\n", env[j]);
 		//printf("My_env: %s\n\n", my_env[j]);
 		j++;
@@ -51,7 +48,7 @@ char *_getenv(const char *name)
 
 	while (my_env[k])
 	{
-		if (strncmp(my_env[k], name, strlen(name)) == 0 && my_env[k][strlen(name)] == '=')
+		if (_strncmp(my_env[k], name, strlen(name)) == 0 && my_env[k][strlen(name)] == '=')
 		{
 			printf("%s\n", my_env[k] + strlen(name) + 1);
 			break;

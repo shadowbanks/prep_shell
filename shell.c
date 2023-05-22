@@ -10,7 +10,7 @@
  */
 int main(int ac, char **av, char **env)
 {
-	int i = 0, status, create = 0, k = 0;
+	int i = 0, status, create = 0, k = 0, j = 0;
 	char *lineptr = NULL, *command = NULL, *pmt = "# ", *argv[] = {"", NULL}, *tokens[50];
 	char *token, *original_path = getenv("PATH"), *path = NULL, *token1 = NULL;
 	size_t n = 0, z = 0;
@@ -19,8 +19,8 @@ int main(int ac, char **av, char **env)
 	struct stat st;
 	int result;
 	char prev_dir[100] = "", pwd[100] = "";
-	char *dir = NULL, prev[100] = "";
-
+	char *dir = NULL, prev[100] = "", *and, *and_arr[50];
+// just adding something
 //	while (gline != EOF)
 	while (1)
 	{
@@ -49,141 +49,158 @@ int main(int ac, char **av, char **env)
 		}
 */
 		i = 0;
-		token1 = strtok(lineptr, ";");
-		while (token1)
+		and = strtok(lineptr, "&&");
+		while (and)
 		{
-			tokens[i] = token1;
-			token1 = strtok(NULL, ";");
-			//printf("TEST token1[%d]: %s\n", i, tokens[i]);
+			and_arr[i] = and;
+			and = strtok(NULL, "&&");
 			i++;
 		}
-		tokens[i] = NULL;
-		//printf("TEST: %s\n", token1);
+		and_arr[i] = NULL;
 
-		k = 0;
-		while (tokens[k])
+		j = 0;
+		while (and_arr[j])
 		{
 			i = 0;
-			token = strtok(tokens[k], " ");
-
-			while (token)
+			token1 = strtok(and_arr[j], ";");
+			while (token1)
 			{
-				argv[i] = token;
-				token = strtok(NULL, " ");
-				//printf("TEST argv: %s\n", argv[i]);
+				tokens[i] = token1;
+				token1 = strtok(NULL, ";");
+				//printf("TEST token1[%d]: %s\n", i, tokens[i]);
 				i++;
 			}
-			argv[i] = NULL;
-			if (argv[0] == NULL)
+			tokens[i] = NULL;
+			//printf("TEST: %s\n", token1);
+
+			k = 0;
+			while (tokens[k])
 			{
-				continue;
-			}
+				i = 0;
+				token = strtok(tokens[k], " ");
 
-			//printf("Just before check [%d]\n", getpid());
-
-			if (strcmp(argv[0], "exit") == 0)
-			{
-				if (argv[1])
-					return (atoi(argv[1]));
-				return (0);
-			}
-
-			dir = NULL;
-
-			if (strcmp(argv[0], "cd") == 0)
-			{
-				//printf("I'm here\n");
-				if (argv[1])
+				while (token)
 				{
-					//printf("Here???\n");
-					dir = argv[1];
+					argv[i] = token;
+					token = strtok(NULL, " ");
+					//printf("TEST argv: %s\n", argv[i]);
+					i++;
 				}
-				if (!dir)
+				argv[i] = NULL;
+				if (argv[0] == NULL)
 				{
-					//printf("In here\n");
-					dir = "/home";
+					continue;
 				}
-				//printf("Checking\n");
-				if (strcmp(dir, "-") == 0)
+
+				//printf("Just before check [%d]\n", getpid());
+
+				if (strcmp(argv[0], "exit") == 0)
 				{
-					//printf("This is -\n");
-					if (strlen(prev) != 0)
+					if (argv[1])
+						return (atoi(argv[1]));
+					return (0);
+				}
+
+				dir = NULL;
+
+				if (strcmp(argv[0], "cd") == 0)
+				{
+					//printf("I'm here\n");
+					if (argv[1])
 					{
-						//printf("Check prev: %s\n", prev);
+						//printf("Here???\n");
+						dir = argv[1];
+					}
+					if (!dir)
+					{
+						//printf("In here\n");
+						dir = "/home";
+					}
+					//printf("Checking\n");
+					if (strcmp(dir, "-") == 0)
+					{
+						//printf("This is -\n");
+						if (strlen(prev) != 0)
+						{
+							//printf("Check prev: %s\n", prev);
+							if (getcwd(prev_dir, sizeof(prev_dir)) == NULL)
+								perror("Error");
+							//printf("PWD: %s\n", prev_dir);
+							//result = chdir(prev);
+							//printf("%s", prev_dir);
+							if (chdir(prev) != 0)
+							{
+								perror("Error");
+								break;
+							}
+							strcpy(prev, prev_dir);
+						}
+						else
+						{
+							//printf("cd: OLDPWD not set\n");
+							break;
+						}
+
+					}
+					else
+					{
 						if (getcwd(prev_dir, sizeof(prev_dir)) == NULL)
 							perror("Error");
-						//printf("PWD: %s\n", prev_dir);
-						//result = chdir(prev);
-						//printf("%s", prev_dir);
-						if (chdir(prev) != 0)
+						if (chdir(dir) != 0)
 						{
 							perror("Error");
 							break;
 						}
 						strcpy(prev, prev_dir);
+						//else
+							//printf("changed %s\n", dir);
 					}
-					else
-					{
-						//printf("cd: OLDPWD not set\n");
-						break;
-					}
+					break;
+				}
 
+				path = strdup(original_path); //create a copy of the original path
+				if (command = searchfile(argv, path))
+				{
+					//printf("FOUND: %s\n", command);
+					cpid = fork(); /*start a child process*/
 				}
 				else
 				{
-					if (getcwd(prev_dir, sizeof(prev_dir)) == NULL)
-						perror("Error");
-					if (chdir(dir) != 0)
-					{
-						perror("Error");
-						break;
-					}
-					strcpy(prev, prev_dir);
-					//else
-						//printf("changed %s\n", dir);
+					//Handle Error massage
+					//while(argv[0][z++]);
+					write(2, argv[0], strlen(argv[0]));
+					//write(2, "command not found" 17);
+					write(2, "\n", 1);
+					//printf("ma: command not found%ld\n", z);
+					break;
 				}
-				break;
-			}
 
-			path = strdup(original_path); //create a copy of the original path
-			if (command = searchfile(argv, path))
-			{
-				//printf("FOUND: %s\n", command);
-				cpid = fork(); /*start a child process*/
-			}
-			else
-			{
-				//Handle Error massage
-				//while(argv[0][z++]);
-				write(2, argv[0], strlen(argv[0]));
-				//write(2, "command not found" 17);
-				write(2, "\n", 1);
-				//printf("ma: command not found%ld\n", z);
-				break;
-			}
+				if (cpid == -1)
+					perror("CPID Error:");
 
-			if (cpid == -1)
-				perror("CPID Error:");
+				//printf("I [%d] got printed? hmmm\n", getpid());
 
-			//printf("I [%d] got printed? hmmm\n", getpid());
-
-			if (cpid == 0)
-			{
-				argv[0] = command; /*assign the command read by getline*/
-
-				if (execve(argv[0], argv, env) == -1)
+				if (cpid == 0)
 				{
-					perror("EXECVE Error");
-					exit(1);
+					argv[0] = command; /*assign the command read by getline*/
+
+					if (execve(argv[0], argv, env) == -1)
+					{
+						perror("EXECVE Error");
+						exit(1);
+					}
 				}
+				else
+				{
+					wait(&status);/*wait for child process to end*/
+					printf("Wait status: %d\n", status>>8);
+				}
+				k++;
+				//printf("NEXT token1: %s\n", tokens[k]);
 			}
-			else
-			{
-				wait(&status);/*wait for child process to end*/
-				printf("Wait status: %d\n", status>>8);
-			}
-			k++;
-			//printf("NEXT token1: %s\n", tokens[k]);
+			if (status != 0)
+				break;
+			j++;
 		}
 	}
 	//printf("\nbefore END\n");

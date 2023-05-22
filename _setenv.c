@@ -5,6 +5,7 @@ int _setenv(const char *name, const char *value, int overwrite)
 	int size = 0, j = 0, k = 0, l = 0, i = 0;
 	char **my_env = NULL,  *temp = NULL, *new_env = NULL, **temp_env = NULL;
 
+	//get the number of environment
 	while (environ[size++]);
 
 	//

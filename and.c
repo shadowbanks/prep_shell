@@ -29,6 +29,7 @@ int main()
 
 		while (command != NULL)
 		{
+<<<<<<< HEAD
 	
 			if (commands[length - 1] == '\n')
 			{
@@ -37,6 +38,23 @@ int main()
 			i = 0;
 				
 			token = strtok(command, " ");
+=======
+			if ((command[strlen(command) - 1]) == '\n')
+				command[strlen(command) - 1] = '\0';
+			char *args[] = {command, NULL};
+			pid_t pid = fork();
+			
+			if (pid == 0) 
+			{
+				/*char *args[] = {"/bin/sh","-c", command};*/
+				if(execve(args[0], args, NULL) != 0)
+				{
+					printf("%s\n", args[0]);
+					perror("Error executing command");
+					break;
+				}
+			}
+>>>>>>> 085c185bdcaf43d42f53d55e0110f4cd8533e68d
 
 			while (token != NULL)
 			{
@@ -49,12 +67,18 @@ int main()
 			
 			if (pid == 0)
 			{
+<<<<<<< HEAD
 				if (execve(args[0], args, NULL) == -1);
 				{
 					printf("%s", args[0]);
 					perror("Error executing command");
 					exit(1);
 				}
+=======
+                		perror("Error");
+ 	          		free(commands);
+				break;
+>>>>>>> 085c185bdcaf43d42f53d55e0110f4cd8533e68d
 			}
 		
 		     	else if (pid > 0)
