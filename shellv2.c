@@ -1,6 +1,12 @@
 #include "main.h"
 
-ssize_t prompt()
+char **split_args(char **tokens, char **argv, int k);
+int exe_command(char **argv, char *original_path, char **env, int *status);
+int handle_args(char **tokens, char *original_path, char **env, int *status);
+int get_token(char *lineptr, char *original_path, char **env, int *status);
+int prompt(char *original_path, char **env, int *status);
+
+int prompt(char *original_path, char **env, int *status)
 {
 	ssize_t gline;
 	size_t n = 0;
@@ -17,11 +23,13 @@ ssize_t prompt()
 	if (lineptr[gline - 1] == '\n')
 		lineptr[gline - 1] = '\0';
 
-	get_token(lineptr);
+	if (get_token(lineptr, original_path, env, status) == 99)
+		return (-1);
+	return (1);
 }
 
 
-get_token(char *lineptr)
+int get_token(char *lineptr, char *original_path, char **env,int *status)
 {
 	char *token1 = NULL, *tokens[50];
 	int i;
@@ -37,13 +45,163 @@ get_token(char *lineptr)
 	}
 	tokens[i] = NULL;
 
-	handle_args(tokens);
+	return (handle_args(tokens, original_path, env, status));
 }
 
-
-handle_args(char **tokens)
+int handle_args(char **tokens, char *original_path, char **env, int *status)
 {
+	char *dir = NULL, prev[100] = "", prev_dir[100] = "";
+	char *argv[100] = {"", NULL};
 	int k;
+	k = 0;
+	while (tokens[k])
+	{
+		split_args(tokens, argv, k);
+
+		//printf("token: %s\n", tokens[k]);
+		//printf("Just before check [%d]\n", getpid());
+
+		if (strcmp(argv[0], "exit") == 0)
+		{
+			if (argv[1])
+				*status = (atoi(argv[1]));
+			return (99);
+		}
+
+		dir = NULL;
+
+		if (strcmp(argv[0], "cd") == 0)
+		{
+			//printf("I'm here\n");
+			if (argv[1])
+			{
+				//printf("Here???\n");
+				dir = argv[1];
+			}
+			if (!dir)
+			{
+				//printf("In here\n");
+				dir = "/home";
+			}
+			//printf("Checking\n");
+			if (strcmp(dir, "-") == 0)
+			{
+				//printf("This is -\n");
+				if (strlen(prev) != 0)
+				{
+					//printf("Check prev: %s\n", prev);
+					if (getcwd(prev_dir, sizeof(prev_dir)) == NULL)
+						perror("Error");
+					//printf("PWD: %s\n", prev_dir);
+					//result = chdir(prev);
+					//printf("%s", prev_dir);
+					if (chdir(prev) != 0)
+					{
+						perror("Error");
+						break;
+					}
+					strcpy(prev, prev_dir);
+				}
+				else
+				{
+					//Don't use printf
+					//
+					//
+					printf("cd: OLDPWD not set\n");
+					break;
+				}
+
+			}
+			else
+			{
+				if (getcwd(prev_dir, sizeof(prev_dir)) == NULL)
+					perror("Error");
+				if (chdir(dir) != 0)
+				{
+					perror("Error");
+					break;
+				}
+				strcpy(prev, prev_dir);
+				//else
+					//printf("changed %s\n", dir);
+			}
+			break;
+		}
+		exe_command(argv, original_path, env, status);
+		if (*status == -1)
+			break;
+		k++;
+	}
+	return (*status);
+}
+
+int exe_command(char **argv, char *original_path, char **env, int *status)
+{
+	char *path = NULL, *command = NULL;
+	pid_t cpid;
+
+	path = strdup(original_path); //create a copy of the original path
+	if (command = searchfile(argv, path))
+	{
+		//printf("FOUND: %s\n", command);
+		cpid = fork(); /*start a child process*/
+	}
+	else
+	{
+		//Handle Error massage
+		//
+		//
+		//while(argv[0][z++]);
+		write(2, argv[0], strlen(argv[0]));
+		//write(2, "command not found" 17);
+		write(2, "\n", 1);
+		//printf("ma: command not found\n");
+		return (-1);
+	}
+
+	if (cpid == -1)
+		perror("CPID Error:");
+
+	//printf("I [%d] got printed? hmmm\n", getpid());
+
+	if (cpid == 0)
+	{
+		argv[0] = command; /*assign the command read by getline*/
+
+		if (execve(argv[0], argv, env) == -1)
+		{
+			perror("EXECVE Error");
+			exit(1);
+		}
+	}
+	else
+	{
+		wait(status);/*wait for child process to end*/
+		printf("Wait status: %d\n", *status>>8);
+		return (*status);
+	}
+	return (0);
+	//printf("NEXT token1: %s\n", tokens[k]);
+}
+
+char **split_args(char **tokens, char **argv, int k)
+{
+	char *token;
+	int i;
+
+	i = 0;
+	token = strtok(tokens[k], " ");
+
+	while (token)
+	{
+		argv[i] = token;
+		token = strtok(NULL, " ");
+		//printf("TEST argv: %s\n", argv[i]);
+		i++;
+	}
+	argv[i] = NULL;
+
+	return (argv);
 }
 /**
  * main - Shell program
@@ -69,10 +227,10 @@ int main(int ac, char **av, char **env)
 //	while (gline != EOF)
 	while (1)
 	{
-		if (prompt() == 1)
+		if (prompt(original_path, env, &status) == 1)
 			continue;
 		else
-			exit(-1);
+			exit(status);
 
 /*
 		if (strcmp(lineptr, "cd") == 0)
@@ -89,131 +247,7 @@ int main(int ac, char **av, char **env)
 		//printf("TEST: %s\n", token1);
 
 
-		k = 0;
-		while (tokens[k])
-		{
-			i = 0;
-			token = strtok(tokens[k], " ");
 
-			while (token)
-			{
-				argv[i] = token;
-				token = strtok(NULL, " ");
-				//printf("TEST argv: %s\n", argv[i]);
-				i++;
-			}
-			argv[i] = NULL;
-			if (argv[0] == NULL)
-			{
-				continue;
-			}
-
-			//printf("Just before check [%d]\n", getpid());
-
-			if (strcmp(argv[0], "exit") == 0)
-			{
-				if (argv[1])
-					return (atoi(argv[1]));
-				return (0);
-			}
-
-			dir = NULL;
-
-			if (strcmp(argv[0], "cd") == 0)
-			{
-				//printf("I'm here\n");
-				if (argv[1])
-				{
-					//printf("Here???\n");
-					dir = argv[1];
-				}
-				if (!dir)
-				{
-					//printf("In here\n");
-					dir = "/home";
-				}
-				//printf("Checking\n");
-				if (strcmp(dir, "-") == 0)
-				{
-					//printf("This is -\n");
-					if (strlen(prev) != 0)
-					{
-						//printf("Check prev: %s\n", prev);
-						if (getcwd(prev_dir, sizeof(prev_dir)) == NULL)
-							perror("Error");
-						//printf("PWD: %s\n", prev_dir);
-						//result = chdir(prev);
-						//printf("%s", prev_dir);
-						if (chdir(prev) != 0)
-						{
-							perror("Error");
-							break;
-						}
-						strcpy(prev, prev_dir);
-					}
-					else
-					{
-						//printf("cd: OLDPWD not set\n");
-						break;
-					}
-
-				}
-				else
-				{
-					if (getcwd(prev_dir, sizeof(prev_dir)) == NULL)
-						perror("Error");
-					if (chdir(dir) != 0)
-					{
-						perror("Error");
-						break;
-					}
-					strcpy(prev, prev_dir);
-					//else
-						//printf("changed %s\n", dir);
-				}
-				break;
-			}
-
-			path = strdup(original_path); //create a copy of the original path
-			if (command = searchfile(argv, path))
-			{
-				//printf("FOUND: %s\n", command);
-				cpid = fork(); /*start a child process*/
-			}
-			else
-			{
-				//Handle Error massage
-				//while(argv[0][z++]);
-				write(2, argv[0], strlen(argv[0]));
-				//write(2, "command not found" 17);
-				write(2, "\n", 1);
-				//printf("ma: command not found%ld\n", z);
-				break;
-			}
-
-			if (cpid == -1)
-				perror("CPID Error:");
-
-			//printf("I [%d] got printed? hmmm\n", getpid());
-
-			if (cpid == 0)
-			{
-				argv[0] = command; /*assign the command read by getline*/
-
-				if (execve(argv[0], argv, env) == -1)
-				{
-					perror("EXECVE Error");
-					exit(1);
-				}
-			}
-			else
-			{
-				wait(&status);/*wait for child process to end*/
-				printf("Wait status: %d\n", status>>8);
-			}
-			k++;
-			//printf("NEXT token1: %s\n", tokens[k]);
-		}
 	}
 	//printf("\nbefore END\n");
 	free(lineptr);
