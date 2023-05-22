@@ -1,7 +1,6 @@
 #include "main.h"
 
-
-
+char *_getenv(const char *name);
 int _setenv(const char *name, const char *value, int overwrite);
 char **split_args(char **tokens, char **argv, int k);
 int exe_command(char **argv, char *original_path, int *status);
@@ -300,6 +299,46 @@ char *searchfile(char **av, char *path)
 	return (NULL);
 }
 
+size_t _strlen(const char *s)
+{
+	size_t i = 0;
+
+	while (*s != '\0')
+		i++, s++;
+	return (i);
+}
+
+int _strncmp(char *s1, char *s2, size_t n)
+{
+	size_t i = 0, s1Len = _strlen(s1), s2Len = _strlen(s2);
+
+	while (i < s1Len && i < s2Len && i < n)
+	{
+		if (s1[i] != s2[i])
+			return (s1[i] - s2[i]);
+		i++;
+	}
+
+	return (0);
+}
+
+char *_getenv(const char *name)
+{
+	int i = 0, j = 0, k = 0;
+	char *token, **my_env = NULL, **env = environ, *temp = NULL;
+
+	while (environ[k])
+	{
+		if (_strncmp(environ[k], name, _strlen(name)) == 0 && environ[k][_strlen(name)] == '=')
+		{
+			//printf("%s\n", environ[k] + strlen(name) + 1);
+			return (environ[k] + _strlen(name) + 1);
+		}
+		k++;
+	}
+	return (NULL);
+}
+
 /**
  * main - Shell program
  * @ac: argument counter
@@ -311,7 +350,7 @@ char *searchfile(char **av, char *path)
 int main(void)
 {
 	int i = 0, status, a = 1;
-	char *original_path = getenv("PATH");
+	char *original_path = _getenv("PATH");
 
 	while (a)
 	{
