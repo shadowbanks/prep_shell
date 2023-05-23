@@ -19,7 +19,7 @@ int main(int ac, char **av, char **env)
 	struct stat st;
 	int result;
 	char prev_dir[100] = "", pwd[100] = "";
-	char *dir = NULL, prev[100] = "", *or, *and_arr[50];
+	char *dir = NULL, prev[100] = "", *or, *or_arr[50];
 // just adding something
 //	while (gline != EOF)
 	while (1)
@@ -52,7 +52,7 @@ int main(int ac, char **av, char **env)
 		or = strtok(lineptr, "||");
 		while (or)
 		{
-			or_arr[i] = and;
+			or_arr[i] = or;
 			or = strtok(NULL, "||");
 			i++;
 		}
