@@ -20,7 +20,7 @@ int main(int ac, char **av, char **env)
 	int result;
 	char prev_dir[100] = "", pwd[100] = "";
 	char *dir = NULL, prev[100] = "";
-
+// just adding something
 //	while (gline != EOF)
 	while (1)
 	{
