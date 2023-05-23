@@ -31,6 +31,7 @@ int handle_cd(char **argv)
 		dir = "/home";
 	if (_strcmp(dir, "-") == 0)
 	{
+		_strcpy(prev, _getenv("OLDPWD"));
 		if (_strlen(prev) != 0)
 		{
 			if (getcwd(prev_dir, sizeof(prev_dir)) == NULL)
@@ -41,6 +42,8 @@ int handle_cd(char **argv)
 				return (9);
 			}
 			_strcpy(prev, prev_dir);
+			if (_setenv("OLDPWD", prev, 1) == 0)
+				printf("Success\n");
 		}
 		else
 		{
@@ -61,14 +64,17 @@ int handle_cd(char **argv)
 			return (9);
 		}
 		_strcpy(prev, prev_dir);
+		if (_setenv("OLDPWD", prev, 1) == 0)
+			printf("Success\n");
 	}
+
 	return (9);
 }
 
 int _setenv(const char *name, const char *value, int overwrite)
 {
-	int j = 0, size = 0, check, l = 0;
-	char **my_env = NULL;
+	int j = 0, size = 0;
+	char **my_env = NULL, *new_env = NULL;
 
 	while (environ[size])/*get the number of environment*/
 		size++;
@@ -80,62 +86,72 @@ int _setenv(const char *name, const char *value, int overwrite)
 	{
 		my_env[j] = malloc(_strlen(environ[j]) + 1);
 		if (!my_env[j])
-		{
+		{/*
 			while (j)
 				free(my_env[--j]);
 			free(my_env);
-			return (1);
+		*/	return (1);
 		}
 		_strcpy(my_env[j], environ[j]);
 		j++;
 	}
+	my_env[j] = NULL;
+
 	new_env = new_env_var(name, value);
 	if (new_env == NULL)
 	{
-		l = 0;
-		while (my_env[l])
-			free(my_env[l++]);
-		free(my_env);
+		/*free_my_env(my_env);*/
 		return (1);
 	}
-	if (check_env(my_env, new_env, overwrite) == 1)
+	if (check_env(my_env, new_env, overwrite, name) == 1)
 	{
-		l = 0;
-		while (my_env[l])
-			free(my_env[l++]);
-		free(my_env);
+	/*	free_my_env(my_env);
 		free(new_env);
-		return (1);
+	*/	return (1);
 	}
-	if (set_new_env(my_env) == 1)
+	if (set_new_env(my_env, size, new_env) == 1)
 		return (1);
 	return (0);
 }
-
-int set_new_env(char **my_env)
+/*
+void free_my_env(char **my_env)
 {
-	int k = 0;
+	int l = 0;
+
+	while (my_env[l])
+		free(my_env[l++]);
+	free(my_env);
+}
+*/
+int set_new_env(char **my_env, int size, char *new_env)
+{
+	int k = 0, i = 0, j = 0;
 	char **temp_env;
 
-	while (my_env[k] != NULL)
+	while (my_env[k])
 		k++;
 
 	if (my_env[k] == NULL)
 	{
-		temp_env = _realloc(my_env, (sizeof(char *) * (size + 2)));
+		temp_env = malloc(sizeof(char *) * (size + 2));
 		if (!temp_env)
-		{
 			return (1);
-		}
-		my_env = temp_env;
-		my_env[k++] = new_env;
-		my_env[k] = NULL;
+
+		for (i = 0; i < size; i++)
+			temp_env[i] = my_env[i];
+
+		temp_env[size++] = new_env;
+		temp_env[size] = NULL;
 	}
-	environ = my_env;
+/*
+	while (environ[j])
+		free(environ[j--]);
+*/
+	environ = temp_env;
 	return (0);
 }
 
-int check_env(char **my_env, char new_env, int overwrite)
+int check_env(char **my_env, char *new_env, int overwrite, const char *name)
 {
 	int k = 0, l;
 	char *temp = NULL;
@@ -151,19 +167,21 @@ int check_env(char **my_env, char new_env, int overwrite)
 				{
 					temp = my_env[k];
 					my_env[k] = new_env;
-					free(temp);
+					/*free(temp);*/
 				}
 				else
 				{
 					l = 0;
+					/*
 					while (my_env[l])
 						free(my_env[l++]);
 					free(my_env);
 					free(new_env);
+					*/
 					return (1);
 				}
-				break;
 			}
+			break;
 		}
 		k++;
 	}
@@ -176,7 +194,7 @@ char *new_env_var(const char *name, const char *value)
 	new_env = malloc(_strlen(name) + _strlen(value) + 2);
 	if (!new_env)
 		return (NULL);
-	new_env = strdup(name);
+	strcpy(new_env, name);
 	strcat(new_env, "=");
 	strcat(new_env, value);
 
@@ -579,6 +597,7 @@ int main(void)
 	int i = 0, status, a = 1;
 	char *original_path = _getenv("PATH");
 
+	_setenv("OLDPWD", "", 1);
 	while (a)
 	{
 		i = prompt(original_path, &status);
