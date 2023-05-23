@@ -49,11 +49,11 @@ int main(int ac, char **av, char **env)
 		}
 */
 		i = 0;
-		and = strtok(lineptr, "&&");
+		and = strtok(lineptr, "||");
 		while (and)
 		{
 			and_arr[i] = and;
-			and = strtok(NULL, "&&");
+			and = strtok(NULL, "||");
 			i++;
 		}
 		and_arr[i] = NULL;
@@ -198,7 +198,7 @@ int main(int ac, char **av, char **env)
 				k++;
 				//printf("NEXT token1: %s\n", tokens[k]);
 			}
-			if (status != 0)
+			if (status == 0)
 				break;
 			j++;
 		}
