@@ -592,11 +592,26 @@ void *_realloc(void *ptr, unsigned int old_size, unsigned int new_size)
  *
  * Return: 0 (on success)
  */
-int main(void)
+int main(int ac, char **av, char **env)
 {
-	int i = 0, status, a = 1;
+	int i = 0, status = 0, a = 1, j = 0;
 	char *original_path = _getenv("PATH");
 
+	char *my_env[100];
+
+	while (environ[j])
+	{
+		my_env[j] = malloc(strlen(environ[j]) * sizeof(char) + 1);
+		if (my_env[j] == NULL)
+			return (-1);
+		strcpy(my_env[j], environ[j]);
+		j++;
+	}
+	my_env[j] = NULL;
+	j = 0;
+	while (my_env[j])
+		printf("%s\n", my_env[j++]);
+/*
 	_setenv("OLDPWD", "", 1);
 	while (a)
 	{
@@ -609,5 +624,9 @@ int main(void)
 			a = 0;
 	}
 	printf("Done\n");
+	*/
+	j = 0;
+	while (my_env[j])
+		free(my_env[j++]);
 	return (status);
 }
