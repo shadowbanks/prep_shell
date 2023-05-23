@@ -46,12 +46,10 @@ int handle_cd(char **argv)
 		{
 			/**
 			 * Don't use printf
-			 *
 			 */
 			printf("cd: OLDPWD not set\n");
 			return (9);
 		}
-
 	}
 	else
 	{
@@ -72,14 +70,12 @@ int _setenv(const char *name, const char *value, int overwrite)
 	int j = 0, size = 0, check, l = 0;
 	char **my_env = NULL;
 
-	/*get the number of environment*/
-	while (environ[size++]);
+	while (environ[size])/*get the number of environment*/
+		size++;
 
-	/* */
 	my_env = malloc(sizeof(char *) * (size + 1));
 	if (!my_env)
 		return (1);
-
 	while (environ[j])
 	{
 		my_env[j] = malloc(_strlen(environ[j]) + 1);
@@ -113,7 +109,6 @@ int _setenv(const char *name, const char *value, int overwrite)
 	}
 	if (set_new_env(my_env) == 1)
 		return (1);
-
 	return (0);
 }
 
@@ -122,7 +117,8 @@ int set_new_env(char **my_env)
 	int k = 0;
 	char **temp_env;
 
-	while (my_env[k++] != NULL);
+	while (my_env[k] != NULL)
+		k++;
 
 	if (my_env[k] == NULL)
 	{
@@ -147,24 +143,27 @@ int check_env(char **my_env, char new_env, int overwrite)
 	/*search for "name", replace it's value if overwrite != 0*/
 	while (my_env[k])
 	{
-		if (_strncmp(my_env[k], name, _strlen(name)) == 0 && my_env[k][_strlen(name)] == '=')
+		if (_strncmp(my_env[k], name, _strlen(name)) == 0) 
 		{
-			if (overwrite != 0)
+			if (my_env[k][_strlen(name)] == '=')
 			{
-				temp = my_env[k];
-				my_env[k] = new_env;
-				free(temp);
+				if (overwrite != 0)
+				{
+					temp = my_env[k];
+					my_env[k] = new_env;
+					free(temp);
+				}
+				else
+				{
+					l = 0;
+					while (my_env[l])
+						free(my_env[l++]);
+					free(my_env);
+					free(new_env);
+					return (1);
+				}
+				break;
 			}
-			else
-			{
-				l = 0;
-				while (my_env[l])
-					free(my_env[l++]);
-				free(my_env);
-				free(new_env);
-				return (1);
-			}
-			break;
 		}
 		k++;
 	}
@@ -276,7 +275,8 @@ char *_strtok(char *str, const char *delim)
 int get_token(char *lineptr, char *original_path, int *status)
 {
 	char *token1 = NULL, *tokens[50];
-	int i= 0;
+	int i = 0;
+
 	token1 = _strtok(lineptr, ";");
 	while (token1)
 	{
@@ -328,20 +328,14 @@ int exe_command(char **argv, char *original_path, int *status)
 	path = strdup(original_path); /*create a copy of the original path*/
 	command = searchfile(argv, path);
 	if (command)
-	{
 		cpid = fork(); /*start a child process*/
-	}
 	else
 	{
 		/**
 		 * Handle Error massage
-		 *
-		 *
-		 *while(argv[0][z++]);
 		 */
 		write(2, argv[0], _strlen(argv[0]));
 		write(2, "\n", 1);
-
 		return (-1);
 	}
 	if (cpid == -1)
@@ -487,9 +481,10 @@ char *_getenv(const char *name)
 
 	while (environ[k])
 	{
-		if (_strncmp(environ[k], name, _strlen(name)) == 0 && environ[k][_strlen(name)] == '=')
+		if (_strncmp(environ[k], name, _strlen(name)) == 0)
 		{
-			return (environ[k] + _strlen(name) + 1);
+			if (environ[k][_strlen(name)] == '=')
+				return (environ[k] + _strlen(name) + 1);
 		}
 		k++;
 	}
@@ -576,9 +571,6 @@ void *_realloc(void *ptr, unsigned int old_size, unsigned int new_size)
 
 /**
  * main - Shell program
- * @ac: argument counter
- * @av: argument variable
- * @env: environment variables
  *
  * Return: 0 (on success)
  */
