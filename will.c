@@ -49,20 +49,20 @@ int main(int ac, char **av, char **env)
 		}
 */
 		i = 0;
-		and = strtok(lineptr, "||");
-		while (and)
+		or = strtok(lineptr, "||");
+		while (or)
 		{
-			and_arr[i] = and;
-			and = strtok(NULL, "||");
+			or_arr[i] = and;
+			or = strtok(NULL, "||");
 			i++;
 		}
-		and_arr[i] = NULL;
+		or_arr[i] = NULL;
 
 		j = 0;
-		while (and_arr[j])
+		while (or_arr[j])
 		{
 			i = 0;
-			token1 = strtok(and_arr[j], ";");
+			token1 = strtok(or_arr[j], ";");
 			while (token1)
 			{
 				tokens[i] = token1;
