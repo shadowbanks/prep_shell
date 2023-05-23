@@ -24,16 +24,20 @@ int main()
 
 		while (command != NULL)
 		{
-			command[strlen(command) - 1] = '\0';
+			if ((command[strlen(command) - 1]) == '\n')
+				command[strlen(command) - 1] = '\0';
+			char *args[] = {command, NULL};
 			pid_t pid = fork();
 			
 			if (pid == 0) 
 			{
-				char *args[] = {"/bin/sh","-c", command};
-				execve("/bin/sh", args, NULL);
-				
-				perror("Error executing command");
-				exit(1);
+				/*char *args[] = {"/bin/sh","-c", command};*/
+				if(execve(args[0], args, NULL) != 0)
+				{
+					printf("%s\n", args[0]);
+					perror("Error executing command");
+					break;
+				}
 			}
 
 			else if (pid > 0)
@@ -44,7 +48,7 @@ int main()
 			{
                 		perror("Error");
  	          		free(commands);
-		  		exit(1);
+				break;
 			}
 			}
 		command = strtok(NULL, "&&");

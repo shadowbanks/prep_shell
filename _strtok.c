@@ -3,9 +3,19 @@
 #include <stdlib.h>
 #include <stdio.h>
 
+/**
+ * _strtok - A function that slipts a string based off it's delimeter
+ * into tokens, subsequence call to the function is needed to
+ * get the other tokens. see (man strtok) for more details
+ *
+ * @str: the string to slipt
+ * @delim: the delimeter(s) to use
+ *
+ * Return: token
+ */
 char *_strtok(char *str, const char *delim)
 {
-	static char *position = NULL;
+	static char *position;
 	int i = 0, j = 0, len = 0, check = 0, temp = 0;
 
 	if (str != NULL)
@@ -30,20 +40,16 @@ char *_strtok(char *str, const char *delim)
 			j++;
 		}
 		i++;
-		if (check > 0)
+		if (check > 0 && ++temp > check)
 		{
-			temp++;
-			if (temp > check)
-			{
-				position = &str[i - 1];
-				return (str);
-			}
+			position = &str[i - 1];
+			return (str);
 		}
 	}
 	if (!str[i])
 	{
 		position = NULL;
-		return(str);
+		return (str);
 	}
 	return (NULL);
 }
@@ -58,13 +64,13 @@ int main(int ac, char **av)
 		exit(98);
 	}
 	tok = _strtok(av[1], av[2]);
-/*
+
 	while (tok)
 	{
 		printf("%s\n", tok);
 		tok = _strtok(NULL, av[2]);
 	}
-	*/
-	printf("%s\n", tok);
+	/*printf("%s\n", tok);
 	printf("%s\n", av[2]);
+	*/
 }
