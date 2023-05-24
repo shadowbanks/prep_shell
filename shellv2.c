@@ -407,7 +407,7 @@ int exe_command(char **argv, char *original_path, int *status)
 	char *path = NULL, *command = NULL;
 	pid_t cpid;
 
-	path = strdup(original_path); /*create a copy of the original path*/
+	path = _strdup(original_path); /*create a copy of the original path*/
 	command = searchfile(argv, path);
 	if (command)
 		cpid = fork(); /*start a child process*/
@@ -762,8 +762,11 @@ int check_env(char **my_env, char *new_env, int overwrite, const char *name)
 
 /**
  * _unsetenv - Remove an environment varaible if exist
- *
+ * @my_env: the environmental variable
+ * @name: name of environment variable to remove
+ * Return: 0 on success -1 on failure
  */
+
 int _unsetenv(char **my_env, const char *name)
 {
 	int k = 0, l, check = 0;
