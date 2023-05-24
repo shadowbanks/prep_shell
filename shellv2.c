@@ -1,6 +1,64 @@
 #include "main.h"
 
 /**
+ * _strdup - make a copy of a string constant
+ * @s: a string
+ *
+ * Return: pointer to string copy
+ */
+char *_strdup(const char *s)
+{
+	int i = 0;
+	char *temp = NULL;
+
+	while (s[i])
+		i++;
+
+	temp = malloc(sizeof(char) * (i + 1));
+
+	if (temp == NULL)
+		return (NULL);
+
+	i = 0;
+	while (s[i])
+	{
+		temp[i] = s[i];
+		i++;
+	} temp[i] = '\0';
+
+	return (temp);
+}
+
+/**
+ * _strcat - Concatenate two strings
+ * @dest: Destinantion string
+ * @src: string to be append to dest
+ *
+ * Return: the pointer to concatenated string
+ */
+char *_strcat(char *dest, char *src)
+{
+	int i = 0, j = 0;
+	char *temp = dest;
+
+	while (temp[i] != '\0')
+	{
+		i++;
+	}
+
+	while (src[j] != '\0')
+	{
+		temp[i] = src[j];
+		i++;
+		j++;
+	}
+
+	temp[i] = '\0';
+
+	return (dest);
+}
+
+/**
  * _strcpy - make a copy of a string
  * @dest: where the copy should be stored
  * @src: string to be copied
@@ -21,7 +79,7 @@ char *_strcpy(char *dest, char *src)
 	return (dest);
 }
 
-int handle_cd(char **argv)
+int handle_cd(char **my_env, char **argv)
 {
 	char *dir = NULL, prev[100] = "", prev_dir[100] = "";
 
@@ -31,7 +89,7 @@ int handle_cd(char **argv)
 		dir = "/home";
 	if (_strcmp(dir, "-") == 0)
 	{
-		_strcpy(prev, _getenv("OLDPWD"));
+		_strcpy(prev, _getenv(my_env, "OLDPWD"));
 		if (_strlen(prev) != 0)
 		{
 			if (getcwd(prev_dir, sizeof(prev_dir)) == NULL)
@@ -42,7 +100,7 @@ int handle_cd(char **argv)
 				return (9);
 			}
 			_strcpy(prev, prev_dir);
-			if (_setenv("OLDPWD", prev, 1) == 0)
+			if (_setenv(my_env, "OLDPWD", prev, 1) == 0)
 				printf("Success\n");
 		}
 		else
@@ -64,150 +122,19 @@ int handle_cd(char **argv)
 			return (9);
 		}
 		_strcpy(prev, prev_dir);
-		if (_setenv("OLDPWD", prev, 1) == 0)
+		if (_setenv(my_env, "OLDPWD", prev, 1) == 0)
 			printf("Success\n");
 	}
 
 	return (9);
 }
 
-int _setenv(const char *name, const char *value, int overwrite)
-{
-	int j = 0, size = 0;
-	char **my_env = NULL, *new_env = NULL;
-
-	while (environ[size])/*get the number of environment*/
-		size++;
-
-	my_env = malloc(sizeof(char *) * (size + 1));
-	if (!my_env)
-		return (1);
-	while (environ[j])
-	{
-		my_env[j] = malloc(_strlen(environ[j]) + 1);
-		if (!my_env[j])
-		{/*
-			while (j)
-				free(my_env[--j]);
-			free(my_env);
-		*/	return (1);
-		}
-		_strcpy(my_env[j], environ[j]);
-		j++;
-	}
-	my_env[j] = NULL;
-
-	new_env = new_env_var(name, value);
-	if (new_env == NULL)
-	{
-		/*free_my_env(my_env);*/
-		return (1);
-	}
-	if (check_env(my_env, new_env, overwrite, name) == 1)
-	{
-	/*	free_my_env(my_env);
-		free(new_env);
-	*/	return (1);
-	}
-	if (set_new_env(my_env, size, new_env) == 1)
-		return (1);
-	return (0);
-}
-/*
-void free_my_env(char **my_env)
-{
-	int l = 0;
-
-	while (my_env[l])
-		free(my_env[l++]);
-	free(my_env);
-}
-*/
-int set_new_env(char **my_env, int size, char *new_env)
-{
-	int k = 0, i = 0, j = 0;
-	char **temp_env;
-
-	while (my_env[k])
-		k++;
-
-	if (my_env[k] == NULL)
-	{
-		temp_env = malloc(sizeof(char *) * (size + 2));
-		if (!temp_env)
-			return (1);
-
-		for (i = 0; i < size; i++)
-			temp_env[i] = my_env[i];
-
-		temp_env[size++] = new_env;
-		temp_env[size] = NULL;
-	}
-/*
-	while (environ[j])
-		free(environ[j--]);
-*/
-	environ = temp_env;
-	return (0);
-}
-
-int check_env(char **my_env, char *new_env, int overwrite, const char *name)
-{
-	int k = 0, l;
-	char *temp = NULL;
-
-	/*search for "name", replace it's value if overwrite != 0*/
-	while (my_env[k])
-	{
-		if (_strncmp(my_env[k], name, _strlen(name)) == 0) 
-		{
-			if (my_env[k][_strlen(name)] == '=')
-			{
-				if (overwrite != 0)
-				{
-					temp = my_env[k];
-					my_env[k] = new_env;
-					/*free(temp);*/
-				}
-				else
-				{
-					l = 0;
-					/*
-					while (my_env[l])
-						free(my_env[l++]);
-					free(my_env);
-					free(new_env);
-					*/
-					return (1);
-				}
-			}
-			break;
-		}
-		k++;
-	}
-	return (0);
-}
-char *new_env_var(const char *name, const char *value)
-{
-	char *new_env = NULL;
-
-	new_env = malloc(_strlen(name) + _strlen(value) + 2);
-	if (!new_env)
-		return (NULL);
-	strcpy(new_env, name);
-	strcat(new_env, "=");
-	strcat(new_env, value);
-
-	return (new_env);
-}
-
-int prompt(char *original_path, int *status)
+int prompt(char **my_env, char *original_path, int *status)
 {
 	ssize_t gline;
 	size_t n = 0;
-	char *lineptr = NULL, *pmt = "# ";
+	char *lineptr = NULL;
 
-	write(1, pmt, 2);
 	gline = _getline(&lineptr, &n, stdin);
 
 	if (gline == -1)
@@ -229,7 +156,7 @@ int prompt(char *original_path, int *status)
 	if (lineptr[gline - 1] == '\n')
 		lineptr[gline - 1] = '\0';
 
-	if (get_token(lineptr, original_path, status) == 99)
+	if (get_token(my_env, lineptr, original_path, status) == 99)
 	{
 		free(lineptr);
 		return (-1);
@@ -290,7 +217,7 @@ char *_strtok(char *str, const char *delim)
 	return (NULL);
 }
 
-int get_token(char *lineptr, char *original_path, int *status)
+int get_token(char **my_env, char *lineptr, char *original_path, int *status)
 {
 	char *token1 = NULL, *tokens[50];
 	int i = 0;
@@ -304,10 +231,10 @@ int get_token(char *lineptr, char *original_path, int *status)
 	}
 	tokens[i] = NULL;
 
-	return (handle_args(tokens, original_path, status));
+	return (handle_args(my_env, tokens, original_path, status));
 }
 
-int handle_args(char **tokens, char *original_path, int *status)
+int handle_args(char **my_env, char **tokens, char *original_path, int *status)
 {
 	char *argv[100] = {"", NULL};
 	int k;
@@ -327,7 +254,7 @@ int handle_args(char **tokens, char *original_path, int *status)
 
 		if (_strcmp(argv[0], "cd") == 0)
 		{
-			if (handle_cd(argv) == 9)
+			if (handle_cd(my_env, argv) == 9)
 				break;
 		}
 		exe_command(argv, original_path, status);
@@ -493,16 +420,16 @@ int _strcmp(const char *s1, const char *s2)
 	return (s1[i] - s2[i]);
 }
 
-char *_getenv(const char *name)
+char *_getenv(char **my_env, const char *name)
 {
 	int k = 0;
 
-	while (environ[k])
+	while (my_env[k])
 	{
-		if (_strncmp(environ[k], name, _strlen(name)) == 0)
+		if (_strncmp(my_env[k], name, _strlen(name)) == 0)
 		{
-			if (environ[k][_strlen(name)] == '=')
-				return (environ[k] + _strlen(name) + 1);
+			if (my_env[k][_strlen(name)] == '=')
+				return (my_env[k] + _strlen(name) + 1);
 		}
 		k++;
 	}
@@ -587,35 +514,138 @@ void *_realloc(void *ptr, unsigned int old_size, unsigned int new_size)
 	return (ptr);
 }
 
+
+int _setenv(char **my_env, const char *name, const char *value, int overwrite)
+{
+	int i = 0, j = 0;
+	char *new_env = NULL;
+
+	new_env = malloc(_strlen(name) + _strlen(value) + 2);
+	if (!new_env)
+		return (1);
+
+	while (name[i])
+	{
+		new_env[i] = name[i];
+		i++;
+	}
+	new_env[i++] = '=';
+	while (value[j])
+	{
+		new_env[i] = value[j];
+		i++, j++;
+	}
+
+	if (check_env(my_env, new_env, overwrite, name) == 1)
+	{
+		free(new_env);
+		return (1);
+	}
+	return (0);
+}
+
+int check_env(char **my_env, char *new_env, int overwrite, const char *name)
+{
+	int k = 0;
+	char *temp = NULL;
+
+	/*search for "name", replace it's value if overwrite != 0*/
+	while (my_env[k])
+	{
+		if (_strncmp(my_env[k], name, _strlen(name)) == 0)
+		{
+			if (my_env[k][_strlen(name)] == '=')
+			{
+				if (overwrite != 0)
+				{
+					temp = my_env[k];
+					my_env[k] = new_env;
+					free(temp);
+				}
+				else
+					return (1);
+				break;
+			}
+		}
+		k++;
+	}
+	if (my_env[k] == NULL)
+	{
+		my_env[k++] = new_env;
+		my_env[k] = NULL;
+	}
+	return (0);
+}
+
+int _unsetenv(char **my_env, const char *name)
+{
+	int k = 0, l, check = 0;
+
+	/*search for "name", replace it's value if overwrite != 0*/
+	while (my_env[k])
+	{
+		if (_strncmp(my_env[k], name, _strlen(name)) == 0)
+		{
+			if (my_env[k][_strlen(name)] == '=')
+			{
+				check = 1;
+				free(my_env[k]);
+				break;
+			}
+		}
+		k++;
+	}
+
+	if (check == 1)
+	{
+		l = k + 1;
+
+		while (my_env[l])
+		{
+			my_env[k] = my_env[l];
+			k++, l++;
+		}
+		my_env[k] = NULL;
+
+		return (0);
+	}
+	return (-1);
+}
+
 /**
  * main - Shell program
+ * @ac: argument counter
+ * @av: argument variable
+ * @env: environment variable
  *
  * Return: 0 (on success)
  */
-int main(int ac, char **av, char **env)
+int main(int ac __attribute__((unused)), char **av __attribute__((unused)), char **env)
 {
 	int i = 0, status = 0, a = 1, j = 0;
-	char *original_path = _getenv("PATH");
+	char *original_path, *pmt = "# ";
 
 	char *my_env[100];
 
-	while (environ[j])
+	while (env[j])
 	{
-		my_env[j] = malloc(strlen(environ[j]) * sizeof(char) + 1);
+		my_env[j] = malloc(_strlen(env[j]) * sizeof(char) + 1);
 		if (my_env[j] == NULL)
 			return (-1);
-		strcpy(my_env[j], environ[j]);
+		_strcpy(my_env[j], env[j]);
 		j++;
 	}
 	my_env[j] = NULL;
-	j = 0;
-	while (my_env[j])
-		printf("%s\n", my_env[j++]);
-/*
-	_setenv("OLDPWD", "", 1);
+
+	original_path = _getenv(my_env, "PATH");
+
+	_setenv(my_env, "OLDPWD", "", 1);
 	while (a)
 	{
-		i = prompt(original_path, &status);
+		/*Is this fine????*/
+		if (isatty(STDIN_FILENO))
+			write(1, pmt, 2);
+		i = prompt(my_env, original_path, &status);
 		if (i == 1)
 			continue;
 		else if (i == 7)
@@ -624,7 +654,7 @@ int main(int ac, char **av, char **env)
 			a = 0;
 	}
 	printf("Done\n");
-	*/
+
 	j = 0;
 	while (my_env[j])
 		free(my_env[j++]);
