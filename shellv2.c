@@ -231,18 +231,73 @@ int get_token(char **my_env, char *lineptr, char *original_path, int *status)
 	}
 	tokens[i] = NULL;
 
-	return (handle_args(my_env, tokens, original_path, status));
+	return (handle_and(my_env, tokens, original_path, status));
 }
 
-int handle_args(char **my_env, char **tokens, char *original_path, int *status)
+int handle_and(char **my_env, char **tokens, char *original_path, int *status)
+{
+	char *and_arr[100] = {"", NULL}, *and;
+	int j, k, return_val, option = 0;
+
+	j = 0;
+	while (tokens[j])
+	{
+		k = 0;
+		and = strtok(tokens[j], "&&");
+		while (and)
+		{
+			and_arr[k] = and;
+			and = strtok(NULL, "&&");
+			k++;
+		}
+		and_arr[k] = NULL;
+
+		return_val = handle_or(my_env, and_arr, original_path, status, &option);
+
+		j++;
+	}
+	return (return_val);
+}
+
+int handle_or(char **my_env, char **tokens, char *original_path, int *status, int *option)
+{
+	char *or_arr[100] = {"", NULL}, *or;
+	int j, k, return_val;
+
+	j = 0;
+	while (tokens[j])
+	{
+		k = 0;
+		or = strtok(tokens[j], "||");
+		while (or)
+		{
+			or_arr[k] = or;
+			or = strtok(NULL, "||");
+			k++;
+		}
+		or_arr[k] = NULL;
+
+		if (k > 1)
+			*option = 1;
+		return_val = handle_args(my_env, or_arr, original_path, status, option);
+
+		if (*option == 0 && *status != 0)
+			return (return_val);
+
+		j++;
+	}
+	return (return_val);
+}
+
+int handle_args(char **my_env, char **and_arr, char *original_path, int *status, int *option)
 {
 	char *argv[100] = {"", NULL};
 	int k;
 
 	k = 0;
-	while (tokens[k])
+	while (and_arr[k])
 	{
-		split_args(tokens, argv, k);
+		split_args(and_arr, argv, k);
 
 		if (_strcmp(argv[0], "exit") == 0)
 		{
@@ -260,6 +315,18 @@ int handle_args(char **my_env, char **tokens, char *original_path, int *status)
 		exe_command(argv, original_path, status);
 		if (*status == -1)
 			break;
+
+		if (*option == 0)
+		{
+			if (*status != 0)
+				return (*status);
+		}
+		else if (*option == 1)
+		{
+			if (*status == 0)
+				return (*status);
+		}
+
 		k++;
 	}
 	return (*status);
