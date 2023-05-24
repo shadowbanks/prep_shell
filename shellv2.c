@@ -721,6 +721,7 @@ int _setenv(char **my_env, const char *name, const char *value, int overwrite)
  * check_env - check if an environment exist
  * or a new is needed
  * @my_env: environment variables
+ * @new_env: new environment variable
  * @overwrite: 0 (value shouldn't change) else (change value)
  * @name: environment name
  *
