@@ -79,9 +79,16 @@ char *_strcpy(char *dest, char *src)
 	return (dest);
 }
 
+/**
+ * handle_cd - Handles cd (change directory command)
+ * @my_env: shell's environment variables
+ * @argv: array of pointers holding directory
+ *
+ * Return: 9
+ */
 int handle_cd(char **my_env, char **argv)
 {
-	char *dir = NULL, prev[100] = "", prev_dir[100] = "";
+	char *dir = NULL, prev[100] = "", prev_dir[100] = "", dir_temp[100] = "";
 
 	if (argv[1])
 		dir = argv[1];
@@ -99,15 +106,14 @@ int handle_cd(char **my_env, char **argv)
 				perror("Error");
 				return (9);
 			}
+			if (getcwd(dir_temp, sizeof(dir_temp)) == NULL)
+				perror("Error");
+			_setenv(my_env, "PWD", dir_temp, 1);
 			_strcpy(prev, prev_dir);
-			if (_setenv(my_env, "OLDPWD", prev, 1) == 0)
-				printf("Success\n");
+			_setenv(my_env, "OLDPWD", prev, 1);
 		}
 		else
 		{
-			/**
-			 * Don't use printf
-			 */
 			printf("cd: OLDPWD not set\n");
 			return (9);
 		}
@@ -121,21 +127,38 @@ int handle_cd(char **my_env, char **argv)
 			perror("Error");
 			return (9);
 		}
+		if (getcwd(dir_temp, sizeof(dir_temp)) == NULL)
+			perror("Error");
+		_setenv(my_env, "PWD", dir_temp, 1);
 		_strcpy(prev, prev_dir);
-		if (_setenv(my_env, "OLDPWD", prev, 1) == 0)
-			printf("Success\n");
+		_setenv(my_env, "OLDPWD", prev, 1);
 	}
 
 	return (9);
 }
 
+/**
+ * prompt - Display the shell prompt, read user input
+ * set "$" to process ID, call get_token
+ * @my_env: shell environment variable
+ * @original_path: environment path
+ * @status: hold the last return value
+ *
+ * Return: 1 (if user only hits enter i.e display prompt again)
+ * 7 (if EOF), -1 (on failure)
+ */
 int prompt(char **my_env, char *original_path, int *status)
 {
 	ssize_t gline;
 	size_t n = 0;
-	char *lineptr = NULL;
+	char *lineptr = NULL, pid_str[10];
+	pid_t my_pid;
 
 	gline = _getline(&lineptr, &n, stdin);
+
+	my_pid = getpid();
+	base_conv(pid_str, my_pid, 10);
+	_setenv(my_env, "$", pid_str, 1);
 
 	if (gline == -1)
 	{
@@ -217,10 +240,19 @@ char *_strtok(char *str, const char *delim)
 	return (NULL);
 }
 
+/**
+ * get_token - split the user input into commands (i.e ;)
+ * @my_env: shell's environment variables
+ * @lineptr: user input
+ * @original_path: environment path
+ * @status: hold the last return value
+ *
+ * Return: the return value of handle_and
+ */
 int get_token(char **my_env, char *lineptr, char *original_path, int *status)
 {
-	char *token1 = NULL, *tokens[50];
-	int i = 0;
+	char *token1 = NULL, *tokens[50], *expand[50];
+	int i = 0, j = 0;
 
 	token1 = _strtok(lineptr, ";");
 	while (token1)
@@ -234,10 +266,19 @@ int get_token(char **my_env, char *lineptr, char *original_path, int *status)
 	return (handle_and(my_env, tokens, original_path, status));
 }
 
+/**
+ * handle_and - perform and operator on commands (i.e &&)
+ * @my_env: shell's environment variables
+ * @tokens: an array of pointers to commands
+ * @original_path: environment path
+ * @status: hold the last return value
+ *
+ * Return: the return value of handle_or
+ */
 int handle_and(char **my_env, char **tokens, char *original_path, int *status)
 {
 	char *and_arr[100] = {"", NULL}, *and;
-	int j, k, return_val, option = 0;
+	int j, k, _val, option = 0;
 
 	j = 0;
 	while (tokens[j])
@@ -252,23 +293,33 @@ int handle_and(char **my_env, char **tokens, char *original_path, int *status)
 		}
 		and_arr[k] = NULL;
 
-		return_val = handle_or(my_env, and_arr, original_path, status, &option);
+		_val = handle_or(my_env, and_arr, original_path, status, &option);
 
 		j++;
 	}
-	return (return_val);
+	return (_val);
 }
 
-int handle_or(char **my_env, char **tokens, char *original_path, int *status, int *option)
+/**
+ * handle_or - perform "or" operator on commands (i.e ||)
+ * @my_env: shell's environment variables
+ * @tok: an array of pointers to commands
+ * @org_path: environment path
+ * @status: hold the last return value
+ * @opt: if 1 its an "or" if 0 its an "and"
+ *
+ * Return: the return value of handle_args
+ */
+int handle_or(char **my_env, char **tok, char *org_path, int *status, int *opt)
 {
 	char *or_arr[100] = {"", NULL}, *or;
-	int j, k, return_val;
+	int j, k, _val;
 
 	j = 0;
-	while (tokens[j])
+	while (tok[j])
 	{
 		k = 0;
-		or = strtok(tokens[j], "||");
+		or = strtok(tok[j], "||");
 		while (or)
 		{
 			or_arr[k] = or;
@@ -278,31 +329,42 @@ int handle_or(char **my_env, char **tokens, char *original_path, int *status, in
 		or_arr[k] = NULL;
 
 		if (k > 1)
-			*option = 1;
-		return_val = handle_args(my_env, or_arr, original_path, status, option);
+			*opt = 1;
+		_val = handle_args(my_env, or_arr, org_path, status, opt);
 
-		if (*option == 0 && *status != 0)
-			return (return_val);
+		if (*opt == 0 && *status != 0)
+			return (_val);
 
 		j++;
 	}
-	return (return_val);
+	return (_val);
 }
 
-int handle_args(char **my_env, char **and_arr, char *original_path, int *status, int *option)
+/**
+ * handle_args - handle individual command and it's arguments
+ * @my_env: shell's environment variables
+ * @_ar: an array of pointers to command and it's arguments
+ * @org_path: environment path
+ * @stat: hold the last return value
+ * @opt: if 1 its an "or" if 0 its an "and"
+ *
+ * Return: 99 (signify cd), *stat(holds execute return)
+ *
+ */
+int handle_args(char **my_env, char **_ar, char *org_path, int *stat, int *opt)
 {
 	char *argv[100] = {"", NULL};
 	int k;
 
 	k = 0;
-	while (and_arr[k])
+	while (_ar[k])
 	{
-		split_args(and_arr, argv, k);
+		split_args(_ar, argv, k);
 
 		if (_strcmp(argv[0], "exit") == 0)
 		{
 			if (argv[1])
-				*status = (atoi(argv[1]));
+				*stat = (atoi(argv[1]));
 			return (99);
 		}
 
@@ -312,26 +374,34 @@ int handle_args(char **my_env, char **and_arr, char *original_path, int *status,
 			if (handle_cd(my_env, argv) == 9)
 				break;
 		}
-		exe_command(argv, original_path, status);
-		if (*status == -1)
+		exe_command(argv, org_path, stat);
+		if (*stat == -1)
 			break;
 
-		if (*option == 0)
+		if (*opt == 0)
 		{
-			if (*status != 0)
-				return (*status);
+			if (*stat != 0)
+				return (*stat);
 		}
-		else if (*option == 1)
+		else if (*opt == 1)
 		{
-			if (*status == 0)
-				return (*status);
+			if (*stat == 0)
+				return (*stat);
 		}
 
 		k++;
 	}
-	return (*status);
+	return (*stat);
 }
 
+/**
+ * exe_command - Start a child process and execute command
+ * @argv: an array of pointers to command and it's arguments
+ * @original_path: environment path
+ * @status: hold the last return value
+ *
+ * Return: 99 (signify cd), *stat(holds execute return)
+ */
 int exe_command(char **argv, char *original_path, int *status)
 {
 	char *path = NULL, *command = NULL;
@@ -366,7 +436,7 @@ int exe_command(char **argv, char *original_path, int *status)
 		wait(status);/*wait for child process to end*/
 		free(command);
 		free(path);
-		printf("Wait status: %d\n", *status >> 8);
+		*status = *status >>  8;
 		return (*status);
 	}
 	free(path);
@@ -374,6 +444,14 @@ int exe_command(char **argv, char *original_path, int *status)
 	return (0);
 }
 
+/**
+ * split_args - Split command and it's argument
+ * @tokens: array of pointers to commands
+ * @argv: holds the split command from it's argument
+ * @k: command position
+ *
+ * Return: pointer to commands and arguments
+ */
 char **split_args(char **tokens, char **argv, int k)
 {
 	char *token;
@@ -393,6 +471,13 @@ char **split_args(char **tokens, char **argv, int k)
 	return (argv);
 }
 
+/**
+ * searchfile - Search for command alias
+ * @av: array of commands to find
+ * @path: envirnoment path
+ *
+ * Return: command's full path or NULL
+ */
 char *searchfile(char **av, char *path)
 {
 	struct stat stbuf;
@@ -411,8 +496,8 @@ char *searchfile(char **av, char *path)
 			if (buff == NULL)
 				return (NULL);
 			_strcpy(buff, path_dir);
-			strcat(buff, "/");
-			strcat(buff, av[i]);
+			_strcat(buff, "/");
+			_strcat(buff, av[i]);
 		}
 		else
 		{
@@ -433,6 +518,12 @@ char *searchfile(char **av, char *path)
 	return (NULL);
 }
 
+/**
+ * _strlen -Get the length of a string
+ * @s: the string
+ *
+ * Return: length of string
+ */
 size_t _strlen(const char *s)
 {
 	size_t i = 0;
@@ -487,6 +578,13 @@ int _strcmp(const char *s1, const char *s2)
 	return (s1[i] - s2[i]);
 }
 
+/**
+ * _getenv - Get the value of an environment name
+ * @my_env: shell's environment variables
+ * @name: environment name
+ *
+ * Return: the environment value
+ */
 char *_getenv(char **my_env, const char *name)
 {
 	int k = 0;
@@ -505,7 +603,7 @@ char *_getenv(char **my_env, const char *name)
 
 /**
  * _getline - my getline function
- * @lineptr - pointer to pointer where what is read
+ * @lineptr: pointer to pointer where what is read
  * should be stored or NULL
  * @n: byte size or 0
  * @stream: where input should be read from
@@ -581,7 +679,15 @@ void *_realloc(void *ptr, unsigned int old_size, unsigned int new_size)
 	return (ptr);
 }
 
-
+/**
+ * _setenv - Set or replace an envrionment "namee=value"
+ * @my_env: shell environment variable
+ * @name: environment name
+ * @value: environment value
+ * @overwrite: 0 (don't change value) else change environment value
+ *
+ * Return: 0 (success), 1 (fail);
+ */
 int _setenv(char **my_env, const char *name, const char *value, int overwrite)
 {
 	int i = 0, j = 0;
@@ -611,6 +717,15 @@ int _setenv(char **my_env, const char *name, const char *value, int overwrite)
 	return (0);
 }
 
+/**
+ * check_env - check if an environment exist
+ * or a new is needed
+ * @my_env: environment variables
+ * @overwrite: 0 (value shouldn't change) else (change value)
+ * @name: environment name
+ *
+ * Return: 0 (success), 1 (failure)
+ */
 int check_env(char **my_env, char *new_env, int overwrite, const char *name)
 {
 	int k = 0;
@@ -644,6 +759,10 @@ int check_env(char **my_env, char *new_env, int overwrite, const char *name)
 	return (0);
 }
 
+/**
+ * _unsetenv - Remove an environment varaible if exist
+ *
+ */
 int _unsetenv(char **my_env, const char *name)
 {
 	int k = 0, l, check = 0;
@@ -680,6 +799,77 @@ int _unsetenv(char **my_env, const char *name)
 }
 
 /**
+ * base_conv - base convertion from decimal to other base
+ * @buffer: location to save the string
+ * @num: number to be converted
+ * @base: desired base
+ *
+ * Return: lenght of converted number (now in string)
+ */
+int base_conv(char *buffer, long num, int base)
+{
+	char *temp;
+	int digit, sign = 0, len = 0;
+
+	if (num == 0)
+	{
+		*buffer++ = 0 + '0';
+		*buffer = '\0';
+		return (_strlen(buffer));
+	}
+	temp = buffer;
+
+	if (num < 0)
+	{
+		sign = 1;
+		num = -num;
+	}
+	while (num)
+	{
+		digit = num % base;
+		if (digit > 9)
+		{
+			*temp++ = digit + 'a' - 10;
+			len++;
+		}
+		else
+			*temp++ = digit + '0';
+		num /= base;
+	}
+	if (len == 1)
+		*temp++ = 0 + '0';
+
+	if (sign)
+		*temp++ = '-';
+	*temp = '\0';
+
+	rev_string(buffer);
+
+	return (_strlen(buffer));
+}
+
+/**
+ * rev_string - Reverse a string
+ * @s: the string
+ *
+ * Return: Nothing
+ */
+void rev_string(char *s)
+{
+	int len = _strlen(s) - 1;
+	char temp;
+	int i = 0;
+
+	while (i < len)
+	{
+		temp = *(s + len);
+		*(s + len) = *(s + i);
+		*(s + i) = temp;
+		i++, len--;
+	}
+}
+
+/**
  * main - Shell program
  * @ac: argument counter
  * @av: argument variable
@@ -690,7 +880,7 @@ int _unsetenv(char **my_env, const char *name)
 int main(int ac __attribute__((unused)), char **av __attribute__((unused)), char **env)
 {
 	int i = 0, status = 0, a = 1, j = 0;
-	char *original_path, *pmt = "# ";
+	char *original_path, *pmt = "# ", status_str[10];
 
 	char *my_env[100];
 
@@ -703,12 +893,13 @@ int main(int ac __attribute__((unused)), char **av __attribute__((unused)), char
 		j++;
 	}
 	my_env[j] = NULL;
-
 	original_path = _getenv(my_env, "PATH");
-
 	_setenv(my_env, "OLDPWD", "", 1);
+
 	while (a)
 	{
+		base_conv(status_str, status, 10);
+		_setenv(my_env, "?", status_str, 1);
 		/*Is this fine????*/
 		if (isatty(STDIN_FILENO))
 			write(1, pmt, 2);
@@ -720,10 +911,10 @@ int main(int ac __attribute__((unused)), char **av __attribute__((unused)), char
 		else
 			a = 0;
 	}
-	printf("Done\n");
 
 	j = 0;
 	while (my_env[j])
 		free(my_env[j++]);
+	write(1, "\n", 1);
 	return (status);
 }

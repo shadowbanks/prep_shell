@@ -35,5 +35,8 @@ int prompt(char **my_env, char *original_path, int *status);
 int handle_cd(char **my_env, char **argv);
 void *_realloc(void *ptr, unsigned int old_size, unsigned int new_size);
 ssize_t _getline(char **lineptr, size_t *n, FILE *stream);
+void _setcwd(char **, char *);
+int base_conv(char *buffer, long num, int base);
+void rev_string(char *s);
 
 #endif /*MAIN_H*/
